@@ -248,6 +248,93 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);
 }
 
+/* ── BOOT / LOGIN OVERLAY ─────────────────────────────── */
+#boot-overlay{
+  position:fixed;inset:0;z-index:9000;
+  background:#000;
+  display:flex;flex-direction:column;
+  font-family:'Share Tech Mono',monospace;
+  overflow:hidden;
+}
+/* CRT flicker on load */
+#boot-overlay{animation:crt-on .25s ease-out}
+@keyframes crt-on{0%{opacity:0;transform:scaleY(.02)}40%{opacity:1;transform:scaleY(1.02)}100%{transform:scaleY(1)}}
+
+/* boot text area */
+#boot-lines{
+  flex:1;padding:28px 36px;overflow:hidden;
+  color:#3ddc84;font-size:12px;line-height:1.8;
+}
+.bl{display:block;white-space:pre}
+.bl-dim{color:#1a5c38}
+.bl-hi{color:#8fbc8f}
+.bl-bright{color:#6effa8}
+.bl-warn{color:#e8a020}
+.bl-err{color:#e05050}
+.bl-cyan{color:#30d0b0}
+
+/* progress bar */
+#boot-bar-wrap{
+  padding:0 36px 16px;
+}
+#boot-bar-label{font-size:10px;color:#1a5c38;margin-bottom:6px;font-family:'Share Tech Mono',monospace}
+#boot-bar-bg{height:2px;background:#0f2a18;width:100%}
+#boot-bar-fill{height:2px;background:#3ddc84;width:0%;transition:width .3s ease}
+
+/* login panel */
+#login-panel{
+  display:none;
+  padding:0 36px 36px;
+}
+#login-box{
+  border:1px solid #1f261f;padding:24px 28px;
+  max-width:480px;background:#0a0c0a;
+}
+#login-header{
+  font-size:10px;letter-spacing:2px;color:#1a5c38;
+  border-bottom:1px solid #1f261f;padding-bottom:12px;margin-bottom:20px;
+}
+.login-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.login-label{font-size:11px;color:#3a4f3a;min-width:100px;font-family:'Share Tech Mono',monospace}
+.login-field{
+  flex:1;background:#0f110f;border:1px solid #1f261f;
+  padding:6px 10px;color:#6effa8;font-size:12px;
+  font-family:'Share Tech Mono',monospace;outline:none;
+  transition:border-color .2s;
+}
+.login-field:focus{border-color:#3ddc84}
+#login-error{
+  font-size:11px;color:#e05050;margin-top:8px;
+  min-height:18px;font-family:'Share Tech Mono',monospace;
+  animation:shake .3s ease;
+}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#login-submit{
+  margin-top:16px;width:100%;
+  background:transparent;border:1px solid #3ddc84;
+  color:#3ddc84;font-family:'Share Tech Mono',monospace;
+  font-size:12px;padding:8px;cursor:pointer;
+  letter-spacing:2px;transition:all .2s;
+}
+#login-submit:hover{background:#3ddc84;color:#000}
+#login-attempts{font-size:10px;color:#3a4f3a;margin-top:8px;text-align:right;font-family:'Share Tech Mono',monospace}
+
+/* lockout */
+#lockout-msg{display:none;color:#e05050;font-size:12px;margin-top:16px;
+  font-family:'Share Tech Mono',monospace;animation:pulse-red 1.5s ease-in-out infinite}
+
+/* fade out transition */
+@keyframes boot-exit{
+  0%{opacity:1;filter:brightness(1)}
+  60%{opacity:1;filter:brightness(3)}
+  100%{opacity:0;filter:brightness(0)}
+}
+.boot-exiting{animation:boot-exit .6s ease-in forwards!important;pointer-events:none}
+
+/* hide main until unlocked */
+#topbar,#layout{opacity:0;transition:opacity .5s ease .2s}
+#topbar.visible,#layout.visible{opacity:1}
+
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:var(--bg2)}
@@ -256,6 +343,32 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 </head>
 <body>
 <div id="scanlines"></div>
+
+<!-- ══ BOOT + LOGIN OVERLAY ══════════════════════════════════ -->
+<div id="boot-overlay">
+  <div id="boot-lines"></div>
+  <div id="boot-bar-wrap">
+    <div id="boot-bar-label">INITIALISATION SYSTÈME...</div>
+    <div id="boot-bar-bg"><div id="boot-bar-fill"></div></div>
+  </div>
+  <div id="login-panel">
+    <div id="login-box">
+      <div id="login-header">AUTHENTIFICATION REQUISE — NIVEAU 3 MINIMUM</div>
+      <div class="login-row">
+        <span class="login-label">UTILISATEUR</span>
+        <input class="login-field" id="login-user" value="vernet" readonly/>
+      </div>
+      <div class="login-row">
+        <span class="login-label">MOT DE PASSE</span>
+        <input class="login-field" id="login-pass" type="password" placeholder="••••••••" autocomplete="off"/>
+      </div>
+      <div id="login-error"></div>
+      <button id="login-submit" onclick="tryLogin()">[ CONNEXION ]</button>
+      <div id="login-attempts">Tentatives restantes : <span id="attempts-left">3</span></div>
+      <div id="lockout-msg">⬛ ACCÈS VERROUILLÉ — INCIDENT SIGNALÉ À LA PC DISTRICT 10</div>
+    </div>
+  </div>
+</div>
 
 <div id="topbar">
   <div id="topbar-left">
@@ -1000,6 +1113,133 @@ function handleTermCmd(raw){
 
 // click terminal area
 document.getElementById('file-content').addEventListener('click',()=>{});
+
+// ═══════════════════════════════════════════════════════════
+// BOOT SEQUENCE + LOGIN
+// ═══════════════════════════════════════════════════════════
+const PASSWORD = 'NCC-01';
+let attemptsLeft = 3;
+let locked = false;
+
+const bootLines = document.getElementById('boot-lines');
+const bar = document.getElementById('boot-bar-fill');
+const barLabel = document.getElementById('boot-bar-label');
+
+function bl(text, cls='bl-dim', delay=0){
+  return new Promise(r=>{
+    setTimeout(()=>{
+      const s = document.createElement('span');
+      s.className = 'bl ' + cls;
+      s.textContent = text;
+      bootLines.appendChild(s);
+      bootLines.scrollTop = bootLines.scrollHeight;
+      r();
+    }, delay);
+  });
+}
+
+function setBar(pct, label){
+  bar.style.width = pct + '%';
+  if(label) barLabel.textContent = label;
+}
+
+async function runBoot(){
+  await bl('', 'bl-dim', 150);
+  await bl('AC-BIOS v4.7.2  //  Administration Civile — Réseau Interne', 'bl-dim', 0);
+  await bl('Copyright 2014 Union Combine. Tous droits réservés.', 'bl-dim', 60);
+  await bl('', 'bl-dim', 40);
+  setBar(5, 'VÉRIFICATION MATÉRIELLE...');
+  await bl('Processeur ................ [2x COMBINE-RISC 3.4GHz]     OK', 'bl-dim', 80);
+  await bl('Mémoire vive .............. [16384 MB]                    OK', 'bl-dim', 60);
+  await bl('Stockage sécurisé ......... [VAULT-AES256]                OK', 'bl-dim', 60);
+  await bl('Interface réseau .......... [INTRANET-AC / CHIFFRÉ]       OK', 'bl-dim', 60);
+  setBar(18, 'CHARGEMENT DU NOYAU...');
+  await bl('', 'bl-dim', 40);
+  await bl('Chargement noyau AC-KERNEL 7.1 ...', 'bl-hi', 40);
+  await bl('  [██░░░░░░░░░░░░░░░░░░]  10%', 'bl-dim', 90);
+  await bl('  [████░░░░░░░░░░░░░░░░]  22%', 'bl-dim', 110);
+  await bl('  [████████░░░░░░░░░░░░]  42%', 'bl-dim', 130);
+  await bl('  [████████████░░░░░░░░]  61%', 'bl-dim', 140);
+  await bl('  [████████████████░░░░]  80%', 'bl-dim', 140);
+  await bl('  [████████████████████] 100%   OK', 'bl-bright', 150);
+  setBar(40, 'MONTAGE DES MODULES...');
+  await bl('', 'bl-dim', 40);
+  await bl('MODULE neurochim-core .......... chargé', 'bl-dim', 60);
+  await bl('MODULE vault-access ............ chargé', 'bl-dim', 55);
+  await bl('MODULE session-log ............. chargé', 'bl-dim', 55);
+  await bl('MODULE pc-liaison .............. chargé', 'bl-dim', 55);
+  await bl('MODULE classif-renderer ........ chargé', 'bl-dim', 55);
+  setBar(60, 'CONNEXION AU RÉSEAU...');
+  await bl('', 'bl-dim', 40);
+  await bl('Liaison INTRANET-AC ............ [ÉTABLIE]', 'bl-dim', 80);
+  await bl('Noeud : CITÉ-13/DISTRICT-10/LAB-SOUTERRAIN', 'bl-dim', 55);
+  await bl('Chiffrement AES-256-CTX ........ [ACTIF]', 'bl-dim', 55);
+  await bl('Journalisation session ......... [ACTIVE]', 'bl-warn', 55);
+  setBar(80, 'VÉRIFICATION DE L\'INTÉGRITÉ...');
+  await bl('', 'bl-dim', 50);
+  await bl('Vérification intégrité fichiers NCC-01 ...', 'bl-hi', 60);
+  await bl('  README.md ................... [INTÈGRE]', 'bl-dim', 50);
+  await bl('  rapports/ ................... [INTÈGRE]', 'bl-dim', 50);
+  await bl('  protocoles/ ................. [INTÈGRE]', 'bl-dim', 50);
+  await bl('  sujets/ ..................... [INTÈGRE — CHIFFRÉ]', 'bl-dim', 50);
+  await bl('  projets/ .................... [INTÈGRE]', 'bl-dim', 50);
+  setBar(100, 'EN ATTENTE D\'AUTHENTIFICATION');
+  await bl('', 'bl-dim', 40);
+  await bl('Système prêt. Authentification requise.', 'bl-bright', 80);
+  await bl('', 'bl-dim', 40);
+
+  document.getElementById('login-panel').style.display = 'block';
+  setTimeout(()=>{
+    const p = document.getElementById('login-pass');
+    p.focus();
+    p.addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
+  }, 100);
+}
+
+function tryLogin(){
+  if(locked) return;
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+
+  if(pass === PASSWORD){
+    errEl.textContent = '';
+    document.getElementById('login-box').style.borderColor = '#3ddc84';
+    bl('', 'bl-dim', 0);
+    bl('Authentification réussie. Ouverture de session...', 'bl-bright', 0);
+    setTimeout(()=>{
+      document.getElementById('boot-overlay').classList.add('boot-exiting');
+      document.getElementById('topbar').classList.add('visible');
+      document.getElementById('layout').classList.add('visible');
+      setTimeout(()=>{
+        document.getElementById('boot-overlay').remove();
+        document.getElementById('term-input').focus();
+      }, 700);
+    }, 600);
+  } else {
+    attemptsLeft--;
+    document.getElementById('attempts-left').textContent = attemptsLeft;
+    document.getElementById('login-pass').value = '';
+    if(attemptsLeft <= 0){
+      locked = true;
+      errEl.textContent = '';
+      document.getElementById('login-submit').disabled = true;
+      document.getElementById('login-submit').style.opacity = '0.3';
+      document.getElementById('login-pass').disabled = true;
+      document.getElementById('login-attempts').style.display = 'none';
+      document.getElementById('lockout-msg').style.display = 'block';
+      bl('', 'bl-dim', 0);
+      bl('ALERTE : 3 tentatives infructueuses — session verrouillée.', 'bl-err', 0);
+      bl('Incident transmis à la Protection Civile du District 10.', 'bl-err', 200);
+    } else {
+      errEl.textContent = '⚠ Mot de passe incorrect.';
+      errEl.style.animation = 'none';
+      void errEl.offsetWidth;
+      errEl.style.animation = 'shake .3s ease';
+    }
+  }
+}
+
+window.addEventListener('load', ()=> runBoot());
 </script>
 </body>
 </html>
