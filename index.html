@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VERNET-DB // UNISCA // SECTION RECHERCHE</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c0a;--bg2:#0f110f;--bg3:#141714;--bg4:#1a1e1a;
+  --border:#1f261f;--border2:#263026;
+  --green:#3ddc84;--green-dim:#1a5c38;--green-bright:#6effa8;
+  --amber:#e8a020;--red:#e05050;--cyan:#30d0b0;
+  --text:#8fbc8f;--text-dim:#3a4f3a;--text-bright:#b8d8b8;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px}
+
+#topbar{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);height:36px;padding:0 12px;z-index:10;justify-content:space-between;opacity:0;transition:opacity .5s ease .2s}
+#topbar.visible{opacity:1}
+#topbar-left{display:flex;align-items:center;gap:12px}
+#topbar-right{display:flex;align-items:center;gap:16px;font-size:10px;color:var(--text-dim)}
+.logo{font-size:11px;font-weight:600;color:var(--green);letter-spacing:2px}
+.classified-badge{background:#1a0a0a;border:1px solid var(--red);color:var(--red);font-size:9px;letter-spacing:3px;padding:2px 8px;animation:pulse-red 3s ease-in-out infinite}
+@keyframes pulse-red{0%,100%{opacity:1;border-color:var(--red)}50%{opacity:.6;border-color:#5a1a1a}}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:blink-dot 2s ease-in-out infinite}
+@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+#layout{display:flex;height:calc(100vh - 36px);opacity:0;transition:opacity .5s ease .2s}
+#layout.visible{opacity:1}
+
+#sidebar{width:255px;min-width:255px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#sidebar-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text-dim);letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
+#file-tree{flex:1;overflow-y:auto;padding:6px 0}
+#file-tree::-webkit-scrollbar{width:4px}
+#file-tree::-webkit-scrollbar-thumb{background:var(--border2)}
+
+.tree-item{display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;user-select:none;white-space:nowrap;overflow:hidden}
+.tree-item:hover{background:var(--bg4)}
+.tree-item.active{background:var(--bg4);border-left:2px solid var(--green)}
+.tree-item.active .ti-name{color:var(--green)}
+.tree-item.locked-dir .ti-name{color:var(--text-dim)}
+.ti-indent{flex-shrink:0;display:inline-block}
+.ti-arrow{font-size:8px;color:var(--text-dim);flex-shrink:0;transition:transform .15s;width:10px;text-align:center}
+.ti-arrow.open{transform:rotate(90deg)}
+.ti-icon{font-size:10px;flex-shrink:0}
+.ti-name{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.ti-lock{font-size:9px;color:var(--red);margin-left:auto;margin-right:10px;flex-shrink:0}
+.tree-children{display:none}
+.tree-children.open{display:block}
+
+#sidebar-footer{border-top:1px solid var(--border);padding:10px 14px;font-size:10px;color:var(--text-dim)}
+.meta-row{display:flex;justify-content:space-between;margin-bottom:3px}
+.meta-val{color:var(--green-dim)}
+
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#tabs{display:flex;align-items:stretch;background:var(--bg2);border-bottom:1px solid var(--border);height:34px;overflow-x:auto;flex-shrink:0}
+#tabs::-webkit-scrollbar{height:0}
+.tab{display:flex;align-items:center;gap:8px;padding:0 14px;cursor:pointer;white-space:nowrap;border-right:1px solid var(--border);font-size:11px;color:var(--text-dim);transition:all .1s;flex-shrink:0;border-top:2px solid transparent}
+.tab:hover{background:var(--bg4);color:var(--text)}
+.tab.active{background:var(--bg);color:var(--green);border-top-color:var(--green)}
+.tab-close{width:14px;height:14px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);transition:all .1s}
+.tab-close:hover{background:var(--red);color:#fff}
+#tabs-empty{display:flex;align-items:center;padding:0 14px;color:var(--text-dim);font-size:11px;flex:1}
+#breadcrumb{padding:6px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:6px}
+.crumb{color:var(--text-dim)}
+.crumb.last{color:var(--text)}
+.crumb-sep{color:var(--border2)}
+#file-content{flex:1;overflow-y:auto;padding:28px 32px;background:var(--bg)}
+#file-content::-webkit-scrollbar{width:4px}
+#file-content::-webkit-scrollbar-thumb{background:var(--border2)}
+
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);text-align:center;gap:12px}
+#welcome pre{font-size:11px;line-height:1.5;color:var(--green-dim)}
+
+.doc-content{max-width:800px}
+.doc-header{border:1px solid var(--amber);padding:12px 16px;margin-bottom:20px;background:rgba(232,160,32,.04)}
+.doc-header-row{display:flex;gap:8px;font-size:11px;margin-bottom:4px;align-items:baseline}
+.doc-label{color:var(--text-dim);min-width:130px;flex-shrink:0}
+.doc-val{color:var(--text-bright)}
+.doc-section{margin-bottom:20px}
+.doc-section-title{font-size:10px;letter-spacing:2px;color:var(--cyan);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.doc-p{font-size:11px;line-height:1.8;color:var(--text);margin-bottom:8px}
+.doc-alert{padding:8px 12px;margin-bottom:8px;font-size:11px;border-left:3px solid var(--amber);background:rgba(232,160,32,.05);color:var(--amber)}
+.doc-alert.red{border-color:var(--red);background:rgba(224,80,80,.05);color:var(--red)}
+.doc-alert.green{border-color:var(--green);background:rgba(61,220,132,.05);color:var(--green)}
+.doc-list{margin:0 0 8px 0;padding:0;list-style:none}
+.doc-list li{font-size:11px;padding:3px 0;color:var(--text);display:flex;gap:8px}
+.doc-list li::before{content:'';flex-shrink:0;width:0}
+.doc-list li.pri::before{content:'';width:0}
+.doc-list li.ok::before{content:'';width:0}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}
+.doc-table th{text-align:left;padding:6px 10px;color:var(--text-dim);border-bottom:1px solid var(--border);font-weight:400;font-size:10px;letter-spacing:1px}
+.doc-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+.doc-table tr:hover td{background:var(--bg4)}
+.stamp{display:inline-block;border:2px solid var(--red);color:var(--red);padding:4px 12px;font-size:11px;letter-spacing:3px;transform:rotate(-2deg);margin-bottom:16px;opacity:.8}
+.quote-block{border-left:3px solid var(--green-dim);padding:10px 16px;margin:12px 0;font-style:italic;color:var(--text-dim);font-size:11px;line-height:1.8}
+
+/* ── VAULT MODAL ─────────────────────────── */
+#vault-overlay{
+  display:none;position:fixed;inset:0;z-index:8000;
+  background:rgba(0,0,0,.85);
+  align-items:center;justify-content:center;
+}
+#vault-overlay.open{display:flex}
+#vault-box{
+  border:1px solid var(--red);padding:28px 32px;
+  background:var(--bg);max-width:400px;width:100%;
+}
+#vault-title{font-size:10px;letter-spacing:2px;color:var(--red);margin-bottom:6px}
+#vault-sub{font-size:11px;color:var(--text-dim);margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:14px}
+#vault-ref{font-size:11px;color:var(--amber);margin-bottom:16px}
+.vault-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.vault-label{font-size:11px;color:var(--text-dim);min-width:100px}
+#vault-input{flex:1;background:var(--bg2);border:1px solid var(--border);padding:6px 10px;color:var(--green-bright);font-size:12px;font-family:'Share Tech Mono',monospace;outline:none;transition:border-color .2s}
+#vault-input:focus{border-color:var(--red)}
+#vault-error{font-size:11px;color:var(--red);min-height:16px;margin-bottom:10px}
+#vault-btns{display:flex;gap:10px;margin-top:6px}
+#vault-ok{flex:1;background:transparent;border:1px solid var(--red);color:var(--red);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px;cursor:pointer;letter-spacing:1px;transition:all .2s}
+#vault-ok:hover{background:var(--red);color:#000}
+#vault-cancel{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:11px;padding:7px 14px;cursor:pointer;transition:all .2s}
+#vault-cancel:hover{border-color:var(--text);color:var(--text)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ── SCANLINES ───────────────────────────── */
+#scanlines{position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:998}
+
+/* ── BOOT ────────────────────────────────── */
+#boot-overlay{position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column;font-family:'Share Tech Mono',monospace;overflow:hidden;animation:crt-on .3s ease-out}
+@keyframes crt-on{0%{opacity:0;transform:scaleY(.02)}40%{opacity:1;transform:scaleY(1.02)}100%{transform:scaleY(1)}}
+#boot-lines{flex:1;padding:28px 36px;overflow:hidden;color:#3ddc84;font-size:12px;line-height:1.8}
+.bl{display:block;white-space:pre}
+.bl-dim{color:#1a5c38}.bl-hi{color:#8fbc8f}.bl-bright{color:#6effa8}.bl-warn{color:#e8a020}.bl-err{color:#e05050}
+#boot-bar-wrap{padding:0 36px 16px}
+#boot-bar-label{font-size:10px;color:#1a5c38;margin-bottom:6px}
+#boot-bar-bg{height:2px;background:#0f2a18;width:100%}
+#boot-bar-fill{height:2px;background:#3ddc84;width:0%;transition:width .4s ease}
+#login-panel{display:none;padding:0 36px 36px}
+#login-box{border:1px solid #1f261f;padding:24px 28px;max-width:480px;background:#0a0c0a}
+#login-header{font-size:10px;letter-spacing:2px;color:#1a5c38;border-bottom:1px solid #1f261f;padding-bottom:12px;margin-bottom:20px}
+.login-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.login-label{font-size:11px;color:#3a4f3a;min-width:100px}
+.login-field{flex:1;background:#0f110f;border:1px solid #1f261f;padding:6px 10px;color:#6effa8;font-size:12px;font-family:'Share Tech Mono',monospace;outline:none;transition:border-color .2s}
+.login-field:focus{border-color:#3ddc84}
+#login-error{font-size:11px;color:#e05050;margin-top:8px;min-height:18px}
+#login-submit{margin-top:16px;width:100%;background:transparent;border:1px solid #3ddc84;color:#3ddc84;font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px;cursor:pointer;letter-spacing:2px;transition:all .2s}
+#login-submit:hover{background:#3ddc84;color:#000}
+#login-attempts{font-size:10px;color:#3a4f3a;margin-top:8px;text-align:right}
+#lockout-msg{display:none;color:#e05050;font-size:12px;margin-top:16px}
+@keyframes boot-exit{0%{opacity:1;filter:brightness(1)}60%{opacity:1;filter:brightness(3)}100%{opacity:0;filter:brightness(0)}}
+.boot-exiting{animation:boot-exit .6s ease-in forwards!important;pointer-events:none}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="scanlines"></div>
+
+<!-- VAULT MODAL -->
+<div id="vault-overlay">
+  <div id="vault-box">
+    <div id="vault-title">⬛ ACCÈS RESTREINT</div>
+    <div id="vault-sub">Ce projet nécessite une authentification supplémentaire.</div>
+    <div id="vault-ref"></div>
+    <div class="vault-row">
+      <span class="vault-label">CLÉ D'ACCÈS</span>
+      <input id="vault-input" type="password" placeholder="••••••••" autocomplete="off"/>
+    </div>
+    <div id="vault-error"></div>
+    <div id="vault-btns">
+      <button id="vault-ok" onclick="vaultSubmit()">[ DÉVERROUILLER ]</button>
+      <button id="vault-cancel" onclick="vaultClose()">ANNULER</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOOT -->
+<div id="boot-overlay">
+  <div id="boot-lines"></div>
+  <div id="boot-bar-wrap">
+    <div id="boot-bar-label">INITIALISATION SYSTÈME...</div>
+    <div id="boot-bar-bg"><div id="boot-bar-fill"></div></div>
+  </div>
+  <div id="login-panel">
+    <div id="login-box">
+      <div id="login-header">AUTHENTIFICATION, VERNET-DB / UNISCA SECTION RECHERCHE</div>
+      <div class="login-row">
+        <span class="login-label">UTILISATEUR</span>
+        <input class="login-field" id="login-user" value="vernet" readonly/>
+      </div>
+      <div class="login-row">
+        <span class="login-label">MOT DE PASSE</span>
+        <input class="login-field" id="login-pass" type="password" placeholder="••••••••" autocomplete="off"/>
+      </div>
+      <div id="login-error"></div>
+      <button id="login-submit" onclick="tryLogin()">[ CONNEXION ]</button>
+      <div id="login-attempts">Tentatives restantes : <span id="attempts-left">3</span></div>
+      <div id="lockout-msg">⬛ ACCÈS VERROUILLÉ, INCIDENT SIGNALÉ À LA PC DISTRICT 08</div>
+    </div>
+  </div>
+</div>
+
+<div id="topbar">
+  <div id="topbar-left">
+    <span class="logo">▸ VERNET-DB</span>
+    <span class="classified-badge">⬛ CONFIDENTIEL</span>
+    <span style="font-size:11px;color:var(--text-dim)">Base de données personnelle, Dr. E. Vernet / UNISCA / District 08</span>
+  </div>
+  <div id="topbar-right">
+    <span><span class="status-dot"></span>Session active</span>
+    <span class="session-username">Dr. E. Vernet</span>
+    <span id="clock"></span>
+  </div>
+</div>
+
+<div id="layout">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span>EXPLORATEUR</span>
+      <span style="color:var(--amber);font-size:9px">VERNET-DB</span>
+    </div>
+    <div id="file-tree"></div>
+    <div id="sidebar-footer">
+      <div class="meta-row"><span>Système</span><span class="meta-val">VERNET-DB</span></div>
+      <div class="meta-row"><span>Unité</span><span class="meta-val">UNISCA / D08</span></div>
+      <div class="meta-row"><span>Projets</span><span class="meta-val">5 enregistrés</span></div>
+      <div class="meta-row"><span>MàJ</span><span class="meta-val">14.03.2014</span></div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="tabs"><div id="tabs-empty">Sélectionnez un fichier dans l'explorateur</div></div>
+    <div id="breadcrumb"><span class="crumb">VERNET-DB</span></div>
+    <div id="file-content">
+      <div id="welcome">
+        <pre>
+  ╔════════════════════════════════════════════════════════╗
+  ║   VERNET-DB, BASE DE DONNÉES PERSONNELLE              ║
+  ║   Dr. E. Vernet, UNISCA / Section Recherche / D08    ║
+  ╚════════════════════════════════════════════════════════╝</pre>
+        <p style="font-size:11px">Sélectionnez un fichier dans l'explorateur pour l'afficher.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CLOCK ─────────────────────────────────────────────────
+function updateClock(){
+  const d = new Date();
+  const day   = String(d.getDate()).padStart(2,'0');
+  const month = String(d.getMonth()+1).padStart(2,'0');
+  const time  = d.toTimeString().slice(0,8);
+  document.getElementById('clock').textContent = day+'/'+month+'/2014 '+time;
+}
+updateClock();setInterval(updateClock,1000);
+
+// ── UTILISATEUR DEPUIS URL ────────────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const sessionUser = urlParams.get('user') || urlParams.get('pseudo') || 'vernet';
+// Appliqué après le DOM — voir window.onload
+
+// ── VAULT (projets verrouillés) ───────────────────────────
+const VAULT_PASSWORD = 'VAULT-7';
+const unlockedVaults = new Set(); // projets déverrouillés pour cette session
+let vaultPendingFile = null;
+let vaultPendingRow  = null;
+
+function vaultOpen(project, fileKey, rowEl){
+  if(unlockedVaults.has(project)){
+    openFileDirectly(fileKey, rowEl);
+    return;
+  }
+  vaultPendingFile = fileKey;
+  vaultPendingRow  = rowEl;
+  document.getElementById('vault-ref').textContent = 'Projet : ' + project;
+  document.getElementById('vault-ref').dataset.project = project;
+  document.getElementById('vault-input').value = '';
+  document.getElementById('vault-error').textContent = '';
+  document.getElementById('vault-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('vault-input').focus(), 100);
+}
+
+function vaultSubmit(){
+  const val = document.getElementById('vault-input').value;
+  const errEl = document.getElementById('vault-error');
+  const project = document.getElementById('vault-ref').dataset.project;
+  if(val === VAULT_PASSWORD){
+    unlockedVaults.add(project);
+    document.getElementById('vault-overlay').classList.remove('open');
+    openFileDirectly(vaultPendingFile, vaultPendingRow);
+    vaultPendingFile = null; vaultPendingRow = null;
+  } else {
+    errEl.textContent = '⚠ Clé incorrecte.';
+    errEl.style.animation='none';void errEl.offsetWidth;errEl.style.animation='shake .3s ease';
+    document.getElementById('vault-input').value='';
+  }
+}
+
+function vaultClose(){
+  document.getElementById('vault-overlay').classList.remove('open');
+  vaultPendingFile=null;vaultPendingRow=null;
+}
+
+document.getElementById('vault-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter') vaultSubmit();
+  if(e.key==='Escape') vaultClose();
+});
+
+// ── ARBORESCENCE ──────────────────────────────────────────
+const TREE=[
+  {id:'f-readme', label:'README.md', icon:'◆', type:'file', fileKey:'README.md'},
+  {id:'f-acces',  label:'ACCES.md',  icon:'▲', iconColor:'var(--red)', type:'file', fileKey:'ACCES.md'},
+
+  // NCC-01, ouvert, théorique
+  {id:'d-ncc01', label:'NCC-01/', icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+    {id:'f-ncc01-fiche', label:'fiche-projet.md',       icon:'◆', type:'file', fileKey:'NCC-01/fiche-projet.md'},
+    {id:'f-ncc01-cdc',   label:'cahier-des-charges.md', icon:'◆', type:'file', fileKey:'NCC-01/cahier-des-charges.md'},
+    {id:'d-ncc01-pro', label:'protocoles/', icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+      {id:'f-p1', label:'NCC-P1-controle.md', icon:'◆', type:'file', fileKey:'NCC-01/protocoles/NCC-P1-controle.md'},
+      {id:'f-p2', label:'NCC-P2-pilote.md',   icon:'◆', type:'file', fileKey:'NCC-01/protocoles/NCC-P2-pilote.md'},
+    ]},
+  ]},
+
+  // Projets verrouillés
+  {id:'d-aug', label:'NCC-AUG/', icon:'▣', iconColor:'var(--amber)', type:'dir', locked:'NCC-AUG', children:[
+    {id:'f-aug', label:'fiche-projet.md', icon:'◆', type:'file', locked:'NCC-AUG', fileKey:'NCC-AUG/fiche-projet.md'},
+  ]},
+  {id:'d-cr', label:'NCC-CR/', icon:'▣', iconColor:'var(--red)', type:'dir', locked:'NCC-CR', children:[
+    {id:'f-cr', label:'fiche-projet.md', icon:'◆', iconColor:'var(--red)', type:'file', locked:'NCC-CR', fileKey:'NCC-CR/fiche-projet.md'},
+  ]},
+  {id:'d-sc', label:'NCC-SC/', icon:'▣', iconColor:'var(--amber)', type:'dir', locked:'NCC-SC', children:[
+    {id:'f-sc', label:'fiche-projet.md', icon:'◆', type:'file', locked:'NCC-SC', fileKey:'NCC-SC/fiche-projet.md'},
+  ]},
+  {id:'d-xen', label:'NCC-XEN/', icon:'▣', iconColor:'var(--amber)', type:'dir', locked:'NCC-XEN', children:[
+    {id:'f-xen', label:'fiche-projet.md', icon:'◆', type:'file', locked:'NCC-XEN', fileKey:'NCC-XEN/fiche-projet.md'},
+  ]},
+];
+
+function renderTree(nodes, depth, container){
+  nodes.forEach(node=>{
+    const row=document.createElement('div');
+    row.className='tree-item'+(node.locked?' locked-dir':'');
+    row.dataset.id=node.id;
+    const iw=depth*14;
+    const lockIcon = node.locked ? `<span class="ti-lock">🔒</span>` : '';
+    row.innerHTML=`
+      <span class="ti-indent" style="width:${iw}px"></span>
+      ${node.type==='dir'
+        ?`<span class="ti-arrow" id="arr-${node.id}">▶</span>`
+        :`<span style="width:10px;flex-shrink:0"></span>`}
+      <span class="ti-icon" style="color:${node.iconColor||'var(--text-dim)'}">${node.icon}</span>
+      <span class="ti-name">${node.label}</span>
+      ${lockIcon}`;
+
+    if(node.type==='dir'){
+      const cw=document.createElement('div');
+      cw.className='tree-children';cw.id='ch-'+node.id;
+      row.onclick=()=>{
+        const open=cw.classList.toggle('open');
+        const arr=document.getElementById('arr-'+node.id);
+        if(arr) arr.classList.toggle('open',open);
+      };
+      container.appendChild(row);
+      renderTree(node.children||[],depth+1,cw);
+      container.appendChild(cw);
+    } else {
+      row.onclick=()=>{
+        if(node.locked && !unlockedVaults.has(node.locked)){
+          vaultOpen(node.locked, node.fileKey, row);
+        } else {
+          openFileDirectly(node.fileKey, row);
+        }
+      };
+      container.appendChild(row);
+    }
+  });
+}
+renderTree(TREE, 0, document.getElementById('file-tree'));
+
+// ── FICHIERS ──────────────────────────────────────────────
+const FILES={
+
+'README.md':{title:'README.md',path:'VERNET-DB',render:()=>`
+<div class="doc-content">
+<div class="stamp">CONFIDENTIEL</div>
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Système</span><span class="doc-val">VERNET-DB, Base de données personnelle</span></div>
+  <div class="doc-header-row"><span class="doc-label">Propriétaire</span><span class="doc-val">Dr. E. Vernet, UNISCA / Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">Dernière MàJ</span><span class="doc-val">14.03.2014</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PRÉSENTATION</div>
+  <p class="doc-p">VERNET-DB centralise l'ensemble des projets de recherche du Dr. E. Vernet, rattaché à l'UNISCA, Section Recherche, District 08. Chaque projet est documenté et archivé de manière indépendante.</p>
+  <div class="doc-alert red">Accès strictement réservé au Dr. Vernet et aux personnes expressément désignées. Toute intrusion est enregistrée et transmise à la Protection Civile du District 08.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PROJETS ENREGISTRÉS</div>
+  <table class="doc-table">
+    <tr><th>Référence</th><th>Intitulé</th><th>État</th><th>Accès</th></tr>
+    <tr><td>NCC-01</td><td>Suppresseurs neurochimiques à diffusion collective</td><td style="color:var(--amber)">En cours de validation</td><td style="color:var(--green)">Ouvert</td></tr>
+    <tr><td>NCC-AUG</td><td>Augmentation biologique du corps humain</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
+    <tr><td>NCC-CR</td><td>Expérimentation conscience résiduelle</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
+    <tr><td>NCC-SC</td><td>Programme "Seconde Chance"</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
+    <tr><td>NCC-XEN</td><td>Étude des organismes de Xen</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
+  </table>
+</div>
+</div>`},
+
+'ACCES.md':{title:'ACCES.md',path:'VERNET-DB',render:()=>`
+<div class="doc-content">
+<div class="stamp">ACCÈS RESTREINT</div>
+<div class="doc-section">
+  <div class="doc-section-title">AVERTISSEMENT</div>
+  <div class="doc-alert red">Ce système est la propriété exclusive du Dr. E. Vernet. Toute tentative d'accès non autorisée est enregistrée et transmise à la Protection Civile du District 08.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ACCÈS AUTORISÉS</div>
+  <ul class="doc-list">
+    <li class="ok">Dr. E. Vernet, propriétaire, accès total</li>
+    <li>Directeur UNISCA, lecture seule</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NIVEAUX DE PROTECTION</div>
+  <p class="doc-p">Les projets NCC-01 est accessible librement depuis cette interface. Les projets NCC-AUG, NCC-CR, NCC-SC et NCC-XEN sont protégés par une clé d'accès supplémentaire.</p>
+</div>
+</div>`},
+
+// ════════ NCC-01, THÉORIQUE ════════
+'NCC-01/fiche-projet.md':{title:'fiche-projet.md',path:'VERNET-DB / NCC-01',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01</span></div>
+  <div class="doc-header-row"><span class="doc-label">Intitulé</span><span class="doc-val">Suppresseurs neurochimiques à diffusion collective</span></div>
+  <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA, Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Proposition, en attente de validation</span></div>
+  <div class="doc-header-row"><span class="doc-label">Date de dépôt</span><span class="doc-val">07.03.2014</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Développer une famille de composés neurochimiques administrables à grande échelle via les circuits de distribution existants, rations alimentaires et réseaux d'eau sectoriels. Agir de façon ciblée sur les comportements de résistance et d'organisation collective, sans altérer les capacités de travail du sujet.</p>
+  <div class="doc-alert">Ce projet est en phase de présentation. Aucun test n'a encore été effectué. Le présent dossier est soumis à la Direction en vue d'une validation formelle.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CIBLES NEUROLOGIQUES PROPOSÉES</div>
+  <table class="doc-table">
+    <tr><th>Zone cérébrale</th><th>Rôle</th><th>Action visée</th></tr>
+    <tr><td>Amygdale</td><td>Réponses émotionnelles peur/colère</td><td>Modulation à la baisse</td></tr>
+    <tr><td>Cortex préfrontal ventromédian</td><td>Décision morale / sentiment d'injustice</td><td>Inhibition partielle progressive</td></tr>
+    <tr><td>Noyau accumbens</td><td>Circuit de récompense</td><td>Stimulation légère (compliance)</td></tr>
+  </table>
+</div>
+
+<div class="doc-section">
+  <div class="doc-section-title">SCHÉMA CÉRÉBRAL — ZONES CIBLÉES</div>
+  <svg viewBox="0 0 520 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;background:#0d0f0d;border:1px solid #1f261f;display:block;margin:12px 0;padding:8px">
+    <!-- Title -->
+    <text x="260" y="16" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="middle" letter-spacing="2">VUE LATÉRALE GAUCHE — ZONES CIBLÉES NCC-01</text>
+    <!-- Brain outline -->
+    <path d="M 130,52 C 85,32 28,68 28,128 C 28,183 50,213 82,236 C 112,258 158,274 220,274 C 285,274 345,257 390,220 C 432,183 442,133 415,96 C 390,62 347,36 277,33 C 224,30 170,40 130,52 Z" fill="#111511" stroke="#263826" stroke-width="2"/>
+    <!-- Cerebellum -->
+    <path d="M 338,222 C 360,234 393,234 410,216 C 424,198 420,174 400,164 C 380,154 352,162 337,182 C 331,192 331,212 338,222 Z" fill="#0e120e" stroke="#1e2e1e" stroke-width="1.5"/>
+    <path d="M 340,197 C 362,190 387,190 403,198" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+    <path d="M 342,210 C 364,203 388,203 404,210" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+    <!-- Brainstem -->
+    <path d="M 195,270 L 200,302" fill="none" stroke="#263826" stroke-width="3" stroke-linecap="round"/>
+    <!-- Lateral/Sylvian fissure -->
+    <path d="M 82,236 C 126,218 188,210 250,210 C 302,210 350,218 387,222" fill="none" stroke="#263826" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <!-- Central sulcus -->
+    <path d="M 252,34 C 244,82 250,132 232,182" fill="none" stroke="#1e2e1e" stroke-width="1" stroke-dasharray="3,4"/>
+    <!-- Minor gyri/sulci -->
+    <path d="M 76,108 C 108,86 150,80 178,96" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 54,155 C 80,136 114,132 142,144" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 290,37 C 322,50 355,74 364,100" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 372,142 C 390,162 396,184 386,206" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 108,250 C 155,241 212,239 262,243" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.5"/>
+
+    <!-- ZONE 1 : Cortex préfrontal ventromédian (cortical, solid) -->
+    <ellipse cx="88" cy="216" rx="37" ry="22" fill="#e8a02025" stroke="#e8a020" stroke-width="1.8"/>
+    <text x="88" y="220" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.9">vmPFC</text>
+    <!-- line to label -->
+    <polyline points="65,200 38,172 14,172" fill="none" stroke="#e8a020" stroke-width="1" opacity="0.8"/>
+    <circle cx="65" cy="200" r="2" fill="#e8a020"/>
+    <text x="13" y="162" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">Cx. préfrontal</text>
+    <text x="13" y="175" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">ventromédian</text>
+
+    <!-- ZONE 2 : Amygdale (deep, dashed) -->
+    <ellipse cx="218" cy="246" rx="29" ry="17" fill="#e0505022" stroke="#e05050" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="218" y="250" fill="#e05050" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">AMY</text>
+    <!-- line to label -->
+    <polyline points="238,258 270,285 345,285" fill="none" stroke="#e05050" stroke-width="1" opacity="0.8"/>
+    <circle cx="238" cy="258" r="2" fill="#e05050"/>
+    <text x="348" y="282" fill="#e05050" font-size="10" font-family="Share Tech Mono,monospace">Amygdale</text>
+    <text x="348" y="294" fill="#e05050" font-size="9" font-family="Share Tech Mono,monospace" opacity="0.6">(profonde)</text>
+
+    <!-- ZONE 3 : Noyau accumbens (deep, dashed) -->
+    <ellipse cx="150" cy="214" rx="24" ry="14" fill="#3ddc8422" stroke="#3ddc84" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="150" y="218" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">NAc</text>
+    <!-- line to label -->
+    <polyline points="138,227 118,285 50,285" fill="none" stroke="#3ddc84" stroke-width="1" opacity="0.8"/>
+    <circle cx="138" cy="227" r="2" fill="#3ddc84"/>
+    <text x="48" y="282" fill="#3ddc84" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="end">Noyau accumbens</text>
+    <text x="48" y="294" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="end" opacity="0.6">(profond)</text>
+
+    <!-- Orientation -->
+    <text x="30" y="305" fill="#263826" font-size="9" font-family="Share Tech Mono,monospace">FRONTAL</text>
+    <text x="388" y="305" fill="#263826" font-size="9" font-family="Share Tech Mono,monospace">OCCIPITAL</text>
+
+    <!-- Legend box -->
+    <rect x="428" y="34" width="82" height="66" fill="#0d0f0d" stroke="#1f261f" stroke-width="1"/>
+    <text x="436" y="48" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace" letter-spacing="1">LÉGENDE</text>
+    <line x1="436" y1="60" x2="452" y2="60" stroke="#e8a020" stroke-width="1.5"/>
+    <text x="455" y="63" fill="#e8a020" font-size="9" font-family="Share Tech Mono,monospace">Cortical</text>
+    <line x1="436" y1="74" x2="452" y2="74" stroke="#3ddc84" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="455" y="77" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace">Profond</text>
+    <line x1="436" y1="88" x2="452" y2="88" stroke="#263826" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="455" y="91" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace">Scissure</text>
+  </svg>
+  <p class="doc-p" style="font-size:10px;color:var(--text-dim);margin-top:6px">Les zones en pointillés indiquent des structures sous-corticales profondes. vmPFC = cortex préfrontal ventromédian, AMY = amygdale, NAc = noyau accumbens.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CONTENU DU DOSSIER</div>
+  <ul class="doc-list">
+    <li class="ok">cahier-des-charges.md, spécifications complètes du projet</li>
+    <li class="ok">protocoles/, protocoles prévus (non encore exécutés)</li>
+  </ul>
+</div>
+<div class="quote-block">« Un citoyen qui ne ressent pas le besoin de contester n'est pas un citoyen qu'on a brisé, c'est un citoyen qu'on a stabilisé. »<br/> Dr. E. Vernet</div>
+</div>`},
+
+'NCC-01/cahier-des-charges.md':{title:'cahier-des-charges.md',path:'VERNET-DB / NCC-01',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01, CDC</span></div>
+  <div class="doc-header-row"><span class="doc-label">Auteur</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--amber)">Soumis à validation, Direction UNISCA</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CONTEXTE</div>
+  <p class="doc-p">La gestion comportementale des populations civiles repose aujourd'hui sur des moyens essentiellement mécaniques, surveillance, couvre-feux, présence de la Protection Civile. Ces dispositifs agissent sur les comportements une fois qu'ils se manifestent, mais n'agissent pas en amont. Ce projet propose une approche préventive, discrète et modulable.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPOSÉS PROPOSÉS</div>
+  <div class="doc-alert green">Composé A, "Régulateur passif", Voie hydrique (proposé)</div>
+  <p class="doc-p">Sédatif neurologique à très faible dose. Cible l'amygdale. Réduction des réponses émotionnelles fortes. Effet progressif sur 3 semaines estimées. Non perceptible par le sujet.</p>
+  <div class="doc-alert green">Composé B, "Inhibiteur de contestation", Voie alimentaire (proposé)</div>
+  <p class="doc-p">Cible le cortex préfrontal ventromédian. Réduction de la capacité à formuler et défendre une position contraire. Fonctions cognitives supérieures préservées.</p>
+  <div class="doc-alert green">Composé C, "Renforçateur de compliance", Voie hydrique/alimentaire (proposé)</div>
+  <p class="doc-p">Stimulation légère du circuit de récompense. Conditionnement positif inconscient associé aux comportements de coopération.</p>
+</div>
+
+<div class="doc-section">
+  <div class="doc-section-title">SCHÉMA CÉRÉBRAL — ZONES CIBLÉES</div>
+  <svg viewBox="0 0 520 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;background:#0d0f0d;border:1px solid #1f261f;display:block;margin:12px 0;padding:8px">
+    <!-- Title -->
+    <text x="260" y="16" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="middle" letter-spacing="2">VUE LATÉRALE GAUCHE — ZONES CIBLÉES NCC-01</text>
+    <!-- Brain outline -->
+    <path d="M 130,52 C 85,32 28,68 28,128 C 28,183 50,213 82,236 C 112,258 158,274 220,274 C 285,274 345,257 390,220 C 432,183 442,133 415,96 C 390,62 347,36 277,33 C 224,30 170,40 130,52 Z" fill="#111511" stroke="#263826" stroke-width="2"/>
+    <!-- Cerebellum -->
+    <path d="M 338,222 C 360,234 393,234 410,216 C 424,198 420,174 400,164 C 380,154 352,162 337,182 C 331,192 331,212 338,222 Z" fill="#0e120e" stroke="#1e2e1e" stroke-width="1.5"/>
+    <path d="M 340,197 C 362,190 387,190 403,198" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+    <path d="M 342,210 C 364,203 388,203 404,210" fill="none" stroke="#1e2e1e" stroke-width="1"/>
+    <!-- Brainstem -->
+    <path d="M 195,270 L 200,302" fill="none" stroke="#263826" stroke-width="3" stroke-linecap="round"/>
+    <!-- Lateral/Sylvian fissure -->
+    <path d="M 82,236 C 126,218 188,210 250,210 C 302,210 350,218 387,222" fill="none" stroke="#263826" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <!-- Central sulcus -->
+    <path d="M 252,34 C 244,82 250,132 232,182" fill="none" stroke="#1e2e1e" stroke-width="1" stroke-dasharray="3,4"/>
+    <!-- Minor gyri/sulci -->
+    <path d="M 76,108 C 108,86 150,80 178,96" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 54,155 C 80,136 114,132 142,144" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 290,37 C 322,50 355,74 364,100" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 372,142 C 390,162 396,184 386,206" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.7"/>
+    <path d="M 108,250 C 155,241 212,239 262,243" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.5"/>
+
+    <!-- ZONE 1 : Cortex préfrontal ventromédian (cortical, solid) -->
+    <ellipse cx="88" cy="216" rx="37" ry="22" fill="#e8a02025" stroke="#e8a020" stroke-width="1.8"/>
+    <text x="88" y="220" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.9">vmPFC</text>
+    <!-- line to label -->
+    <polyline points="65,200 38,172 14,172" fill="none" stroke="#e8a020" stroke-width="1" opacity="0.8"/>
+    <circle cx="65" cy="200" r="2" fill="#e8a020"/>
+    <text x="13" y="162" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">Cx. préfrontal</text>
+    <text x="13" y="175" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">ventromédian</text>
+
+    <!-- ZONE 2 : Amygdale (deep, dashed) -->
+    <ellipse cx="218" cy="246" rx="29" ry="17" fill="#e0505022" stroke="#e05050" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="218" y="250" fill="#e05050" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">AMY</text>
+    <!-- line to label -->
+    <polyline points="238,258 270,285 345,285" fill="none" stroke="#e05050" stroke-width="1" opacity="0.8"/>
+    <circle cx="238" cy="258" r="2" fill="#e05050"/>
+    <text x="348" y="282" fill="#e05050" font-size="10" font-family="Share Tech Mono,monospace">Amygdale</text>
+    <text x="348" y="294" fill="#e05050" font-size="9" font-family="Share Tech Mono,monospace" opacity="0.6">(profonde)</text>
+
+    <!-- ZONE 3 : Noyau accumbens (deep, dashed) -->
+    <ellipse cx="150" cy="214" rx="24" ry="14" fill="#3ddc8422" stroke="#3ddc84" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="150" y="218" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">NAc</text>
+    <!-- line to label -->
+    <polyline points="138,227 118,285 50,285" fill="none" stroke="#3ddc84" stroke-width="1" opacity="0.8"/>
+    <circle cx="138" cy="227" r="2" fill="#3ddc84"/>
+    <text x="48" y="282" fill="#3ddc84" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="end">Noyau accumbens</text>
+    <text x="48" y="294" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="end" opacity="0.6">(profond)</text>
+
+    <!-- Orientation -->
+    <text x="30" y="305" fill="#263826" font-size="9" font-family="Share Tech Mono,monospace">FRONTAL</text>
+    <text x="388" y="305" fill="#263826" font-size="9" font-family="Share Tech Mono,monospace">OCCIPITAL</text>
+
+    <!-- Legend box -->
+    <rect x="428" y="34" width="82" height="66" fill="#0d0f0d" stroke="#1f261f" stroke-width="1"/>
+    <text x="436" y="48" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace" letter-spacing="1">LÉGENDE</text>
+    <line x1="436" y1="60" x2="452" y2="60" stroke="#e8a020" stroke-width="1.5"/>
+    <text x="455" y="63" fill="#e8a020" font-size="9" font-family="Share Tech Mono,monospace">Cortical</text>
+    <line x1="436" y1="74" x2="452" y2="74" stroke="#3ddc84" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="455" y="77" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace">Profond</text>
+    <line x1="436" y1="88" x2="452" y2="88" stroke="#263826" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="455" y="91" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace">Scissure</text>
+  </svg>
+  <p class="doc-p" style="font-size:10px;color:var(--text-dim);margin-top:6px">Les zones en pointillés indiquent des structures sous-corticales profondes. vmPFC = cortex préfrontal ventromédian, AMY = amygdale, NAc = noyau accumbens.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPORTEMENTS CIBLÉS</div>
+  <ul class="doc-list">
+    <li class="pri">Contestation verbale face aux agents de l'Union</li>
+    <li class="pri">Regroupement non autorisé / organisation collective</li>
+    <li>Résistance passive aux directives administratives</li>
+    <li>Diffusion d'informations contraires aux intérêts de l'Union</li>
+    <li class="ok">Renforcer : respect spontané des consignes</li>
+    <li class="ok">Renforcer : coopération lors des contrôles</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CALENDRIER PRÉVISIONNEL (sous réserve de validation)</div>
+  <table class="doc-table">
+    <tr><th>Phase</th><th>Statut</th></tr>
+    <tr><td>Phase 1 : Formulation des composés et tests en environnement contrôlé</td><td style="color:var(--text-dim)">Non démarrée</td></tr>
+    <tr><td>Phase 2 : Déploiement pilote sur secteur restreint</td><td style="color:var(--text-dim)">Non démarrée</td></tr>
+    <tr><td>Phase 3 : Analyse des données et ajustements</td><td style="color:var(--text-dim)">Non démarrée</td></tr>
+    <tr><td>Phase 4 : Déploiement sectoriel progressif</td><td style="color:var(--text-dim)">Non démarrée</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NOTE DU RESPONSABLE</div>
+  <div class="quote-block">« Ce que je propose ici n'est pas un outil de répression. C'est un outil de prévention. Les dispositifs actuels réagissent. Ce projet agit en amont. La nuance mérite d'être portée à l'attention de la Direction. »<br/> Dr. E. Vernet</div>
+</div>
+</div>`},
+
+'NCC-01/protocoles/NCC-P1-controle.md':{title:'NCC-P1-controle.md',path:'VERNET-DB / NCC-01 / protocoles',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01-P1</span></div>
+  <div class="doc-header-row"><span class="doc-label">Phase prévue</span><span class="doc-val">1, Environnement contrôlé</span></div>
+  
+  <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--text-dim)">Non démarré, en attente de validation du projet</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">DESCRIPTION</div>
+  <p class="doc-p">Administration des composés A, B et C sur une cohorte restreinte de sujets en milieu fermé. Observation des effets neurologiques et comportementaux sur une durée de six semaines. Ajustement des dosages selon les profils neurologiques identifiés.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPOSÉS PRÉVUS</div>
+  <div class="doc-alert green">Composé A, "Régulateur passif", Amygdale, Voie hydrique</div>
+  <div class="doc-alert green">Composé B, "Inhibiteur de contestation", Cortex préfrontal, Voie alimentaire</div>
+  <div class="doc-alert green">Composé C, "Renforçateur de compliance", Noyau accumbens, Voie hydrique/alimentaire</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">INDICATEURS DE SUIVI PRÉVUS</div>
+  <ul class="doc-list">
+    <li>Fréquence de contestation verbale</li>
+    <li>Tentatives de regroupement non autorisé</li>
+    <li>Taux de compliance aux directives</li>
+    <li>Profils neurologiques résistants identifiés</li>
+  </ul>
+</div>
+</div>`},
+
+'NCC-01/protocoles/NCC-P2-pilote.md':{title:'NCC-P2-pilote.md',path:'VERNET-DB / NCC-01 / protocoles',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01-P2</span></div>
+  <div class="doc-header-row"><span class="doc-label">Phase prévue</span><span class="doc-val">2, Secteur pilote</span></div>
+  
+  <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--text-dim)">Non démarré, conditionnel aux résultats de la Phase 1</span></div>
+  <div class="doc-header-row"><span class="doc-label">Périmètre envisagé</span><span class="doc-val">Secteur résidentiel restreint, District 08 (à désigner)</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">DESCRIPTION</div>
+  <p class="doc-p">Déploiement des composés validés en Phase 1 sur un secteur résidentiel réel, en coordination avec la Protection Civile locale. Validation à grande échelle et ajustement des formulations selon les profils de terrain. Un secteur témoin non exposé sera désigné pour comparaison.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">MODALITÉS ENVISAGÉES</div>
+  <ul class="doc-list">
+    <li>Circuits d'eau sectoriels, Composé A + C</li>
+    <li>Rations alimentaires de secteur, Composé B</li>
+    <li>Dosages ajustables par zone selon données Protection Civile</li>
+    <li>Secteur témoin non exposé pour comparaison des indicateurs</li>
+  </ul>
+</div>
+</div>`},
+
+// ════════ PROJETS VERROUILLÉS ════════
+'NCC-AUG/fiche-projet.md':{title:'fiche-projet.md',path:'VERNET-DB / NCC-AUG',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-AUG</span></div>
+  <div class="doc-header-row"><span class="doc-label">Intitulé</span><span class="doc-val">Augmentation biologique du corps humain</span></div>
+  <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA, Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Cahier des charges en cours de rédaction</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-alert">Le cahier des charges de ce projet est actuellement en cours de rédaction. Les informations présentées ici constituent une base préliminaire et sont susceptibles d'évoluer.</div>
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Élargir l'application des protocoles d'augmentation Combine aux sujets civils non militaires, en réduisant les taux de rejet organique. Renforcement physique et résistance accrue, à des fins militaires ou civiles. Possibilité d'utilisation des technologies Combine.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">AXES DE RECHERCHE</div>
+  <ul class="doc-list">
+    <li>Réduction du rejet des greffons mécaniques par les tissus organiques</li>
+    <li>Compatibilité biologique avec les technologies Combine standard</li>
+    <li>Extension du spectre des candidats viables hors recrutement militaire</li>
+    <li>Protocoles d'adaptation progressive pour sujets civils non préparés</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">VERROUS TECHNIQUES</div>
+  <div class="doc-alert">Le rejet organique reste le principal obstacle. L'adaptation au civil général nécessite une refonte partielle des protocoles d'implantation actuels.</div>
+</div>
+</div>`},
+
+'NCC-CR/fiche-projet.md':{title:'fiche-projet.md',path:'VERNET-DB / NCC-CR',render:()=>`
+<div class="doc-content">
+<div class="stamp">CLASSIFIÉ</div>
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-CR</span></div>
+  <div class="doc-header-row"><span class="doc-label">Intitulé</span><span class="doc-val">Expérimentation de la "conscience résiduelle"</span></div>
+  <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA, Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Cahier des charges en cours de rédaction</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-alert">Le cahier des charges de ce projet est actuellement en cours de rédaction. Les informations présentées ici constituent une base préliminaire et sont susceptibles d'évoluer.</div>
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Déterminer jusqu'à quel point un sujet peut être modifié, neurologiquement, physiquement, tout en conservant une capacité de travail dite "complexe". Situer le seuil au-delà duquel un humain devient inutilisable. Le repousser.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">MÉTHODOLOGIE</div>
+  <p class="doc-p">Cartographie progressive du seuil, sujet après sujet. Chaque cycle repousse légèrement les limites théoriques établies par le cycle précédent.</p>
+  <div class="doc-alert red">Données de suivi individuelles stockées dans VAULT-CR, accès Dr. Vernet uniquement.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAT D'AVANCEMENT</div>
+  <p class="doc-p">Les modèles théoriques initiaux sous-estimaient la plasticité neurologique humaine sous contrainte prolongée. Les données actuelles indiquent une marge d'intervention supérieure d'environ 40% aux projections initiales.</p>
+</div>
+</div>`},
+
+'NCC-SC/fiche-projet.md':{title:'fiche-projet.md',path:'VERNET-DB / NCC-SC',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-SC</span></div>
+  <div class="doc-header-row"><span class="doc-label">Intitulé</span><span class="doc-val">Programme "Seconde Chance", Reconditionnement comportemental</span></div>
+  <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA, Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Cahier des charges en cours de rédaction</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-alert">Le cahier des charges de ce projet est actuellement en cours de rédaction. Les informations présentées ici constituent une base préliminaire et sont susceptibles d'évoluer.</div>
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Développer des méthodes de remodelage cognitif ciblant les individus marginaux ou réfractaires, afin de modifier durablement leur rapport à l'Union. L'objectif est la réintégration fonctionnelle.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">APPROCHES ENVISAGÉES</div>
+  <ul class="doc-list">
+    <li>Protocoles neurochimiques de remodelage identitaire progressif</li>
+    <li>Reconditionnement par exposition répétée à stimuli associatifs contrôlés</li>
+    <li>Effacement sélectif de référentiels comportementaux négatifs</li>
+    <li>Substitution de cadres de référence, identité, appartenance, loyauté</li>
+  </ul>
+</div>
+<div class="doc-alert green">Avantage opérationnel : transformation d'une ressource problématique en ressource utilisable.</div>
+</div>`},
+
+'NCC-XEN/fiche-projet.md':{title:'fiche-projet.md',path:'VERNET-DB / NCC-XEN',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-XEN</span></div>
+  <div class="doc-header-row"><span class="doc-label">Intitulé</span><span class="doc-val">Étude des organismes de Xen à des fins biologiques</span></div>
+  <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA, Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Cahier des charges en cours de rédaction</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-alert">Le cahier des charges de ce projet est actuellement en cours de rédaction. Les informations présentées ici constituent une base préliminaire et sont susceptibles d'évoluer.</div>
+  <div class="doc-section-title">CONTEXTE</div>
+  <p class="doc-p">Les organismes de Xen présentent des propriétés biologiques sans équivalent terrestre. Leur capacité de régénération, d'adaptation et de survie dans des environnements hostiles constitue une piste directement applicable aux travaux d'augmentation humaine.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">AXES D'ÉTUDE</div>
+  <ul class="doc-list">
+    <li>Analyse des mécanismes de régénération tissulaire xenienne</li>
+    <li>Compatibilité potentielle avec les tissus humains</li>
+    <li>Propriétés adaptatives applicables à la résistance organique humaine</li>
+    <li>Synergies avec les technologies d'augmentation Combine existantes</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">VERROUS OPÉRATIONNELS</div>
+  <div class="doc-alert">Accès aux spécimens non encore accordé. Demande déposée auprès de la Direction. Étude documentaire en cours.</div>
+</div>
+<div class="quote-block">« Ce que Xen représente biologiquement, on ne fait que commencer à en mesurer les implications. »<br/> Dr. E. Vernet</div>
+</div>`},
+
+};
+
+// ── TABS ──────────────────────────────────────────────────
+let openTabs=[],activeTab=null;
+
+function openFileDirectly(path, rowEl){
+  if(!FILES[path])return;
+  document.querySelectorAll('.tree-item').forEach(el=>el.classList.remove('active'));
+  if(rowEl)rowEl.classList.add('active');
+  if(!openTabs.includes(path))openTabs.push(path);
+  setActive(path);
+}
+
+function setActive(path){
+  activeTab=path;renderTabs();
+  document.getElementById('file-content').innerHTML=FILES[path].render();
+  renderBreadcrumb(path);
+}
+
+function closeTab(path,e){
+  e.stopPropagation();
+  const idx=openTabs.indexOf(path);
+  openTabs.splice(idx,1);
+  if(activeTab===path)activeTab=openTabs[Math.min(idx,openTabs.length-1)]||null;
+  renderTabs();
+  if(activeTab){setActive(activeTab);}
+  else{
+    document.getElementById('file-content').innerHTML='<div id="welcome"><pre>\n  ╔════════════════════════════════════════════════════════╗\n  ║   VERNET-DB, BASE DE DONNÉES PERSONNELLE              ║\n  ║   Dr. E. Vernet, UNISCA / Section Recherche / D08    ║\n  ╚════════════════════════════════════════════════════════╝</pre><p style="font-size:11px">Sélectionnez un fichier dans l\'explorateur.</p></div>';
+    document.getElementById('breadcrumb').innerHTML='<span class="crumb">VERNET-DB</span>';
+  }
+}
+
+function renderTabs(){
+  const el=document.getElementById('tabs');
+  if(!openTabs.length){el.innerHTML='<div id="tabs-empty">Sélectionnez un fichier dans l\'explorateur</div>';return;}
+  el.innerHTML='';
+  openTabs.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='tab'+(p===activeTab?' active':'');
+    d.onclick=()=>setActive(p);
+    d.innerHTML=`<span>${FILES[p].title}</span><span class="tab-close" onclick="closeTab('${p}',event)">✕</span>`;
+    el.appendChild(d);
+  });
+}
+
+function renderBreadcrumb(path){
+  const el=document.getElementById('breadcrumb');
+  if(!path||!FILES[path]){el.innerHTML='<span class="crumb">VERNET-DB</span>';return;}
+  const parts=FILES[path].path.split(' / ');
+  el.innerHTML=parts.map((p,i)=>{
+    const last=i===parts.length-1;
+    return(i>0?'<span class="crumb-sep"> / </span>':'')+`<span class="crumb ${last?'last':''}">${p}</span>`;
+  }).join('');
+}
+
+// ── BOOT + LOGIN ──────────────────────────────────────────
+const PASSWORD='NCC-01';
+let attemptsLeft=3,locked=false;
+const bootLines=document.getElementById('boot-lines');
+const bar=document.getElementById('boot-bar-fill');
+const barLabel=document.getElementById('boot-bar-label');
+
+function bl(text,cls='bl-dim',delay=0){
+  return new Promise(r=>{setTimeout(()=>{
+    const s=document.createElement('span');
+    s.className='bl '+cls;s.textContent=text;
+    bootLines.appendChild(s);bootLines.scrollTop=bootLines.scrollHeight;r();
+  },delay);});
+}
+function setBar(p,l){bar.style.width=p+'%';if(l)barLabel.textContent=l;}
+
+async function runBoot(){
+  await bl('','bl-dim',150);
+  await bl('AC-BIOS v4.7.2  //  Administration Civile, Réseau Interne','bl-dim',0);
+  await bl('Copyright 2014 Union Combine. Tous droits réservés.','bl-dim',60);
+  await bl('','bl-dim',40);
+  setBar(5,'VÉRIFICATION MATÉRIELLE...');
+  await bl('Processeur ................ [2x COMBINE-RISC 3.4GHz]     OK','bl-dim',80);
+  await bl('Mémoire vive .............. [16384 MB]                    OK','bl-dim',60);
+  await bl('Stockage sécurisé ......... [VAULT-AES256]                OK','bl-dim',60);
+  await bl('Interface réseau .......... [INTRANET-AC / CHIFFRÉ]       OK','bl-dim',60);
+  setBar(20,'CHARGEMENT DU NOYAU...');
+  await bl('','bl-dim',40);
+  await bl('Chargement noyau AC-KERNEL 7.1 ...','bl-hi',40);
+  await bl('  [██░░░░░░░░░░░░░░░░░░]  10%','bl-dim',90);
+  await bl('  [████░░░░░░░░░░░░░░░░]  25%','bl-dim',110);
+  await bl('  [████████░░░░░░░░░░░░]  44%','bl-dim',130);
+  await bl('  [████████████░░░░░░░░]  62%','bl-dim',140);
+  await bl('  [████████████████░░░░]  81%','bl-dim',140);
+  await bl('  [████████████████████] 100%   OK','bl-bright',150);
+  setBar(45,'MONTAGE DES MODULES...');
+  await bl('','bl-dim',40);
+  await bl('MODULE vernet-db-core .......... chargé','bl-dim',60);
+  await bl('MODULE vault-access ............ chargé','bl-dim',55);
+  await bl('MODULE session-log ............. chargé','bl-dim',55);
+  await bl('MODULE unisca-liaison .......... chargé','bl-dim',55);
+  setBar(65,'CONNEXION AU RÉSEAU...');
+  await bl('','bl-dim',40);
+  await bl('Liaison INTRANET-AC ............ [ÉTABLIE]','bl-dim',80);
+  await bl('Noeud : CITÉ-13/DISTRICT-08/UNISCA/VERNET-DB','bl-dim',55);
+  await bl('Chiffrement AES-256-CTX ........ [ACTIF]','bl-dim',55);
+  await bl('Journalisation session ......... [ACTIVE]','bl-warn',55);
+  setBar(82,'VÉRIFICATION DE L\'INTÉGRITÉ...');
+  await bl('','bl-dim',50);
+  await bl('Vérification intégrité VERNET-DB ...','bl-hi',60);
+  await bl('  NCC-01/ ..................... [INTÈGRE]','bl-dim',45);
+  await bl('  NCC-AUG/ ................... [INTÈGRE, VERROUILLÉ]','bl-dim',45);
+  await bl('  NCC-CR/ ..................... [INTÈGRE, VERROUILLÉ]','bl-dim',45);
+  await bl('  NCC-SC/ ..................... [INTÈGRE, VERROUILLÉ]','bl-dim',45);
+  await bl('  NCC-XEN/ ................... [INTÈGRE, VERROUILLÉ]','bl-dim',45);
+  setBar(100,'EN ATTENTE D\'AUTHENTIFICATION');
+  await bl('','bl-dim',40);
+  await bl('Système prêt. Authentification requise.','bl-bright',80);
+  await bl('','bl-dim',40);
+  document.getElementById('login-panel').style.display='block';
+  document.getElementById('login-user').value = sessionUser;
+  setTimeout(()=>{
+    const p=document.getElementById('login-pass');
+    p.focus();
+    p.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+  },100);
+}
+
+function tryLogin(){
+  if(locked)return;
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  if(pass===PASSWORD){
+    errEl.textContent='';
+    document.getElementById('login-box').style.borderColor='#3ddc84';
+    bl('','bl-dim',0);
+    bl('Authentification réussie. Ouverture de session...','bl-bright',0);
+    // Mettre à jour le nom affiché dans le topbar
+    document.querySelectorAll('.session-username').forEach(el=>el.textContent='Dr. '+sessionUser.charAt(0).toUpperCase()+sessionUser.slice(1));
+    setTimeout(()=>{
+      document.getElementById('boot-overlay').classList.add('boot-exiting');
+      document.getElementById('topbar').classList.add('visible');
+      document.getElementById('layout').classList.add('visible');
+      setTimeout(()=>document.getElementById('boot-overlay').remove(),700);
+    },600);
+  } else {
+    attemptsLeft--;
+    document.getElementById('attempts-left').textContent=attemptsLeft;
+    document.getElementById('login-pass').value='';
+    if(attemptsLeft<=0){
+      locked=true;
+      errEl.textContent='';
+      document.getElementById('login-submit').disabled=true;
+      document.getElementById('login-submit').style.opacity='0.3';
+      document.getElementById('login-pass').disabled=true;
+      document.getElementById('login-attempts').style.display='none';
+      document.getElementById('lockout-msg').style.display='block';
+      bl('','bl-dim',0);
+      bl('ALERTE : 3 tentatives infructueuses, session verrouillée.','bl-err',0);
+      bl('Incident transmis à la Protection Civile du District 08.','bl-err',200);
+    } else {
+      errEl.textContent='⚠ Mot de passe incorrect.';
+      errEl.style.animation='none';void errEl.offsetWidth;errEl.style.animation='shake .3s ease';
+    }
+  }
+}
+
+window.addEventListener('load',()=>runBoot());
+</script>
+</body>
+</html>
