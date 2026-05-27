@@ -8,343 +8,140 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0c0a;
-  --bg2:#0f110f;
-  --bg3:#141714;
-  --bg4:#1a1e1a;
-  --border:#1f261f;
-  --border2:#263026;
-  --green:#3ddc84;
-  --green-dim:#1a5c38;
-  --green-bright:#6effa8;
-  --amber:#e8a020;
-  --red:#e05050;
-  --cyan:#30d0b0;
-  --text:#8fbc8f;
-  --text-dim:#3a4f3a;
-  --text-bright:#b8d8b8;
+  --bg:#0a0c0a;--bg2:#0f110f;--bg3:#141714;--bg4:#1a1e1a;
+  --border:#1f261f;--border2:#263026;
+  --green:#3ddc84;--green-dim:#1a5c38;--green-bright:#6effa8;
+  --amber:#e8a020;--red:#e05050;--cyan:#30d0b0;
+  --text:#8fbc8f;--text-dim:#3a4f3a;--text-bright:#b8d8b8;
 }
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px}
 
 /* TOPBAR */
-#topbar{
-  display:flex;align-items:center;gap:0;
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  height:36px;padding:0 12px;position:relative;z-index:10;
-  justify-content:space-between;
-}
+#topbar{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);height:36px;padding:0 12px;position:relative;z-index:10;justify-content:space-between;opacity:0;transition:opacity .5s ease .2s}
+#topbar.visible{opacity:1}
 #topbar-left{display:flex;align-items:center;gap:12px}
 #topbar-right{display:flex;align-items:center;gap:16px;font-size:10px;color:var(--text-dim)}
 .logo{font-size:11px;font-weight:600;color:var(--green);letter-spacing:2px}
-.classified-badge{
-  background:#1a0a0a;border:1px solid var(--red);
-  color:var(--red);font-size:9px;letter-spacing:3px;
-  padding:2px 8px;animation:pulse-red 3s ease-in-out infinite;
-}
+.classified-badge{background:#1a0a0a;border:1px solid var(--red);color:var(--red);font-size:9px;letter-spacing:3px;padding:2px 8px;animation:pulse-red 3s ease-in-out infinite}
 @keyframes pulse-red{0%,100%{opacity:1;border-color:var(--red)}50%{opacity:.6;border-color:#5a1a1a}}
-.session-info{color:var(--text-dim);font-size:10px}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:blink-dot 2s ease-in-out infinite}
 @keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* LAYOUT */
-#layout{display:flex;height:calc(100vh - 36px)}
+#layout{display:flex;height:calc(100vh - 36px);opacity:0;transition:opacity .5s ease .2s}
+#layout.visible{opacity:1}
 
 /* SIDEBAR */
-#sidebar{
-  width:240px;min-width:240px;
-  background:var(--bg2);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-#sidebar-header{
-  padding:10px 14px;border-bottom:1px solid var(--border);
-  font-size:10px;color:var(--text-dim);letter-spacing:1px;
-  display:flex;justify-content:space-between;align-items:center;
-}
+#sidebar{width:260px;min-width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#sidebar-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text-dim);letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
 #file-tree{flex:1;overflow-y:auto;padding:6px 0}
 #file-tree::-webkit-scrollbar{width:4px}
 #file-tree::-webkit-scrollbar-thumb{background:var(--border2)}
 
-.tree-section{margin-bottom:2px}
-.tree-dir{
-  display:flex;align-items:center;gap:6px;
-  padding:5px 14px;cursor:pointer;
-  color:var(--amber);font-size:11px;
-  user-select:none;transition:background .1s;
-}
-.tree-dir:hover{background:var(--bg4)}
-.tree-dir.open .dir-arrow{transform:rotate(90deg)}
-.dir-arrow{font-size:8px;transition:transform .15s;color:var(--text-dim);flex-shrink:0}
-.tree-children{display:none;padding-left:0}
-.tree-children.visible{display:block}
-.tree-file{
-  display:flex;align-items:center;gap:6px;
-  padding:4px 14px 4px 34px;cursor:pointer;
-  color:var(--text);font-size:11px;
-  transition:background .1s;border-left:2px solid transparent;
-}
-.tree-file:hover{background:var(--bg4);color:var(--text-bright)}
-.tree-file.active{
-  background:var(--bg4);color:var(--green);
-  border-left-color:var(--green);
-}
-.tree-root-file{padding-left:14px}
-.file-icon{font-size:10px;color:var(--text-dim);flex-shrink:0}
-.dir-icon{font-size:11px;flex-shrink:0}
+/* Tree elements */
+.tree-item{display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;user-select:none;white-space:nowrap;overflow:hidden}
+.tree-item:hover{background:var(--bg4)}
+.tree-item.active{background:var(--bg4);color:var(--green);border-left:2px solid var(--green)}
+.tree-item.active .ti-name{color:var(--green)}
+.ti-indent{flex-shrink:0;display:inline-block}
+.ti-arrow{font-size:8px;color:var(--text-dim);flex-shrink:0;transition:transform .15s;width:10px;text-align:center}
+.ti-arrow.open{transform:rotate(90deg)}
+.ti-icon{font-size:10px;flex-shrink:0}
+.ti-name{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.ti-badge{margin-left:auto;margin-right:8px;font-size:9px;padding:0 4px;flex-shrink:0}
+.tree-children{display:none}
+.tree-children.open{display:block}
 
-/* SIDEBAR BOTTOM */
-#sidebar-footer{
-  border-top:1px solid var(--border);padding:10px 14px;
-  font-size:10px;color:var(--text-dim);
-}
+/* Sidebar footer */
+#sidebar-footer{border-top:1px solid var(--border);padding:10px 14px;font-size:10px;color:var(--text-dim)}
 .meta-row{display:flex;justify-content:space-between;margin-bottom:3px}
 .meta-val{color:var(--green-dim)}
 
 /* MAIN */
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-
-/* TABS */
-#tabs{
-  display:flex;align-items:stretch;
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  height:34px;overflow-x:auto;flex-shrink:0;
-}
+#tabs{display:flex;align-items:stretch;background:var(--bg2);border-bottom:1px solid var(--border);height:34px;overflow-x:auto;flex-shrink:0}
 #tabs::-webkit-scrollbar{height:0}
-.tab{
-  display:flex;align-items:center;gap:8px;
-  padding:0 14px;cursor:pointer;white-space:nowrap;
-  border-right:1px solid var(--border);font-size:11px;
-  color:var(--text-dim);transition:all .1s;flex-shrink:0;
-  border-top:2px solid transparent;
-}
+.tab{display:flex;align-items:center;gap:8px;padding:0 14px;cursor:pointer;white-space:nowrap;border-right:1px solid var(--border);font-size:11px;color:var(--text-dim);transition:all .1s;flex-shrink:0;border-top:2px solid transparent}
 .tab:hover{background:var(--bg4);color:var(--text)}
 .tab.active{background:var(--bg);color:var(--green);border-top-color:var(--green)}
-.tab-close{
-  width:14px;height:14px;border-radius:2px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;color:var(--text-dim);
-  transition:all .1s;line-height:1;
-}
+.tab-close{width:14px;height:14px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);transition:all .1s}
 .tab-close:hover{background:var(--red);color:#fff}
 #tabs-empty{display:flex;align-items:center;padding:0 14px;color:var(--text-dim);font-size:11px;flex:1}
-
-/* BREADCRUMB */
-#breadcrumb{
-  padding:6px 16px;background:var(--bg3);
-  border-bottom:1px solid var(--border);
-  font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:6px;
-}
+#breadcrumb{padding:6px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:6px}
 .crumb{color:var(--text-dim)}
 .crumb.last{color:var(--text)}
 .crumb-sep{color:var(--border2)}
-
-/* CONTENT AREA */
-#content-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
-#file-content{
-  flex:1;overflow-y:auto;padding:24px 28px;
-  background:var(--bg);
-}
+#file-content{flex:1;overflow-y:auto;padding:28px 32px;background:var(--bg)}
 #file-content::-webkit-scrollbar{width:4px}
 #file-content::-webkit-scrollbar-thumb{background:var(--border2)}
 
 /* WELCOME */
-#welcome{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  height:100%;color:var(--text-dim);text-align:center;gap:12px;
-}
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);text-align:center;gap:12px}
 #welcome pre{font-size:11px;line-height:1.5;color:var(--green-dim)}
-#welcome p{font-size:11px}
 
-/* FILE RENDERING */
-.doc-content{max-width:780px}
-.doc-header{
-  border:1px solid var(--amber);padding:12px 16px;margin-bottom:20px;
-  background:rgba(232,160,32,.04);
-}
+/* DOC STYLES */
+.doc-content{max-width:800px}
+.doc-header{border:1px solid var(--amber);padding:12px 16px;margin-bottom:20px;background:rgba(232,160,32,.04)}
 .doc-header-row{display:flex;gap:8px;font-size:11px;margin-bottom:4px;align-items:baseline}
-.doc-label{color:var(--text-dim);min-width:120px;flex-shrink:0}
+.doc-label{color:var(--text-dim);min-width:130px;flex-shrink:0}
 .doc-val{color:var(--text-bright)}
 .doc-section{margin-bottom:20px}
-.doc-section-title{
-  font-size:10px;letter-spacing:2px;color:var(--cyan);
-  margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;
-}
+.doc-section-title{font-size:10px;letter-spacing:2px;color:var(--cyan);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px}
 .doc-p{font-size:11px;line-height:1.8;color:var(--text);margin-bottom:8px}
-.doc-alert{
-  padding:8px 12px;margin-bottom:8px;font-size:11px;
-  border-left:3px solid var(--amber);background:rgba(232,160,32,.05);color:var(--amber);
-}
+.doc-alert{padding:8px 12px;margin-bottom:8px;font-size:11px;border-left:3px solid var(--amber);background:rgba(232,160,32,.05);color:var(--amber)}
 .doc-alert.red{border-color:var(--red);background:rgba(224,80,80,.05);color:var(--red)}
 .doc-alert.green{border-color:var(--green);background:rgba(61,220,132,.05);color:var(--green)}
 .doc-list{margin:0 0 8px 0;padding:0;list-style:none}
 .doc-list li{font-size:11px;padding:3px 0;color:var(--text);display:flex;gap:8px}
 .doc-list li::before{content:'—';color:var(--text-dim);flex-shrink:0}
-.doc-list li.pri{color:var(--amber)}
 .doc-list li.pri::before{content:'!';color:var(--amber)}
 .doc-list li.ok::before{content:'+';color:var(--green)}
 .doc-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}
 .doc-table th{text-align:left;padding:6px 10px;color:var(--text-dim);border-bottom:1px solid var(--border);font-weight:400;font-size:10px;letter-spacing:1px}
 .doc-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text)}
 .doc-table tr:hover td{background:var(--bg4)}
-.stamp{
-  display:inline-block;border:2px solid var(--red);
-  color:var(--red);padding:4px 12px;font-size:11px;letter-spacing:3px;
-  transform:rotate(-2deg);margin-bottom:16px;opacity:.8;
-}
-.quote-block{
-  border-left:3px solid var(--green-dim);padding:10px 16px;
-  margin:12px 0;font-style:italic;color:var(--text-dim);font-size:11px;line-height:1.8;
-}
-.tag{
-  display:inline-block;background:var(--bg4);border:1px solid var(--border2);
-  padding:1px 8px;font-size:10px;margin:2px;color:var(--text-dim);
-}
+.stamp{display:inline-block;border:2px solid var(--red);color:var(--red);padding:4px 12px;font-size:11px;letter-spacing:3px;transform:rotate(-2deg);margin-bottom:16px;opacity:.8}
+.quote-block{border-left:3px solid var(--green-dim);padding:10px 16px;margin:12px 0;font-style:italic;color:var(--text-dim);font-size:11px;line-height:1.8}
+.tag{display:inline-block;background:var(--bg4);border:1px solid var(--border2);padding:1px 8px;font-size:10px;margin:2px;color:var(--text-dim)}
 .tag.red{border-color:var(--red);color:var(--red)}
 .tag.green{border-color:var(--green-dim);color:var(--green)}
 .tag.amber{border-color:var(--amber);color:var(--amber)}
 
-/* TERMINAL PANE */
-#terminal-pane{
-  height:160px;border-top:1px solid var(--border);
-  background:var(--bg2);display:flex;flex-direction:column;flex-shrink:0;
-}
-#terminal-tabs{
-  display:flex;align-items:center;border-bottom:1px solid var(--border);
-  padding:0 12px;height:28px;gap:0;
-}
-.term-tab{
-  font-size:10px;padding:0 12px;height:28px;
-  display:flex;align-items:center;cursor:pointer;
-  color:var(--text-dim);border-right:1px solid var(--border);
-}
-.term-tab.active{color:var(--green);background:var(--bg)}
-#term-output{
-  flex:1;overflow-y:auto;padding:6px 14px;font-size:11px;
-  font-family:'Share Tech Mono',monospace;
-}
-#term-output::-webkit-scrollbar{width:4px}
-#term-output::-webkit-scrollbar-thumb{background:var(--border2)}
-#term-input-row{
-  display:flex;align-items:center;padding:4px 14px;
-  border-top:1px solid var(--border);gap:6px;
-}
-#term-prompt{color:var(--green);font-size:11px;white-space:nowrap;font-family:'Share Tech Mono',monospace}
-#term-input{
-  flex:1;background:transparent;border:none;outline:none;
-  color:var(--green-bright);font-size:11px;
-  font-family:'Share Tech Mono',monospace;caret-color:var(--green);
-}
-.tline{line-height:1.6;padding:0}
-.tline.dim{color:var(--text-dim)}
-.tline.hi{color:var(--text-bright)}
-.tline.ok{color:var(--green)}
-.tline.warn{color:var(--amber)}
-.tline.err{color:var(--red)}
-.tline.cyan{color:var(--cyan)}
+/* SCANLINES */
+#scanlines{position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:998}
 
-/* SCANLINE OVERLAY */
-#scanlines{
-  position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:999;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);
-}
-
-/* ── BOOT / LOGIN OVERLAY ─────────────────────────────── */
-#boot-overlay{
-  position:fixed;inset:0;z-index:9000;
-  background:#000;
-  display:flex;flex-direction:column;
-  font-family:'Share Tech Mono',monospace;
-  overflow:hidden;
-}
-/* CRT flicker on load */
-#boot-overlay{animation:crt-on .25s ease-out}
+/* BOOT OVERLAY */
+#boot-overlay{position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column;font-family:'Share Tech Mono',monospace;overflow:hidden;animation:crt-on .3s ease-out}
 @keyframes crt-on{0%{opacity:0;transform:scaleY(.02)}40%{opacity:1;transform:scaleY(1.02)}100%{transform:scaleY(1)}}
-
-/* boot text area */
-#boot-lines{
-  flex:1;padding:28px 36px;overflow:hidden;
-  color:#3ddc84;font-size:12px;line-height:1.8;
-}
+#boot-lines{flex:1;padding:28px 36px;overflow:hidden;color:#3ddc84;font-size:12px;line-height:1.8}
 .bl{display:block;white-space:pre}
-.bl-dim{color:#1a5c38}
-.bl-hi{color:#8fbc8f}
-.bl-bright{color:#6effa8}
-.bl-warn{color:#e8a020}
-.bl-err{color:#e05050}
-.bl-cyan{color:#30d0b0}
-
-/* progress bar */
-#boot-bar-wrap{
-  padding:0 36px 16px;
-}
-#boot-bar-label{font-size:10px;color:#1a5c38;margin-bottom:6px;font-family:'Share Tech Mono',monospace}
+.bl-dim{color:#1a5c38}.bl-hi{color:#8fbc8f}.bl-bright{color:#6effa8}.bl-warn{color:#e8a020}.bl-err{color:#e05050}
+#boot-bar-wrap{padding:0 36px 16px}
+#boot-bar-label{font-size:10px;color:#1a5c38;margin-bottom:6px}
 #boot-bar-bg{height:2px;background:#0f2a18;width:100%}
-#boot-bar-fill{height:2px;background:#3ddc84;width:0%;transition:width .3s ease}
-
-/* login panel */
-#login-panel{
-  display:none;
-  padding:0 36px 36px;
-}
-#login-box{
-  border:1px solid #1f261f;padding:24px 28px;
-  max-width:480px;background:#0a0c0a;
-}
-#login-header{
-  font-size:10px;letter-spacing:2px;color:#1a5c38;
-  border-bottom:1px solid #1f261f;padding-bottom:12px;margin-bottom:20px;
-}
+#boot-bar-fill{height:2px;background:#3ddc84;width:0%;transition:width .4s ease}
+#login-panel{display:none;padding:0 36px 36px}
+#login-box{border:1px solid #1f261f;padding:24px 28px;max-width:480px;background:#0a0c0a}
+#login-header{font-size:10px;letter-spacing:2px;color:#1a5c38;border-bottom:1px solid #1f261f;padding-bottom:12px;margin-bottom:20px}
 .login-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.login-label{font-size:11px;color:#3a4f3a;min-width:100px;font-family:'Share Tech Mono',monospace}
-.login-field{
-  flex:1;background:#0f110f;border:1px solid #1f261f;
-  padding:6px 10px;color:#6effa8;font-size:12px;
-  font-family:'Share Tech Mono',monospace;outline:none;
-  transition:border-color .2s;
-}
+.login-label{font-size:11px;color:#3a4f3a;min-width:100px}
+.login-field{flex:1;background:#0f110f;border:1px solid #1f261f;padding:6px 10px;color:#6effa8;font-size:12px;font-family:'Share Tech Mono',monospace;outline:none;transition:border-color .2s}
 .login-field:focus{border-color:#3ddc84}
-#login-error{
-  font-size:11px;color:#e05050;margin-top:8px;
-  min-height:18px;font-family:'Share Tech Mono',monospace;
-  animation:shake .3s ease;
-}
+#login-error{font-size:11px;color:#e05050;margin-top:8px;min-height:18px;animation:shake .3s ease}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-#login-submit{
-  margin-top:16px;width:100%;
-  background:transparent;border:1px solid #3ddc84;
-  color:#3ddc84;font-family:'Share Tech Mono',monospace;
-  font-size:12px;padding:8px;cursor:pointer;
-  letter-spacing:2px;transition:all .2s;
-}
+#login-submit{margin-top:16px;width:100%;background:transparent;border:1px solid #3ddc84;color:#3ddc84;font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px;cursor:pointer;letter-spacing:2px;transition:all .2s}
 #login-submit:hover{background:#3ddc84;color:#000}
-#login-attempts{font-size:10px;color:#3a4f3a;margin-top:8px;text-align:right;font-family:'Share Tech Mono',monospace}
-
-/* lockout */
-#lockout-msg{display:none;color:#e05050;font-size:12px;margin-top:16px;
-  font-family:'Share Tech Mono',monospace;animation:pulse-red 1.5s ease-in-out infinite}
-
-/* fade out transition */
-@keyframes boot-exit{
-  0%{opacity:1;filter:brightness(1)}
-  60%{opacity:1;filter:brightness(3)}
-  100%{opacity:0;filter:brightness(0)}
-}
+#login-attempts{font-size:10px;color:#3a4f3a;margin-top:8px;text-align:right}
+#lockout-msg{display:none;color:#e05050;font-size:12px;margin-top:16px;animation:pulse-red 1.5s ease-in-out infinite}
+@keyframes boot-exit{0%{opacity:1;filter:brightness(1)}60%{opacity:1;filter:brightness(3)}100%{opacity:0;filter:brightness(0)}}
 .boot-exiting{animation:boot-exit .6s ease-in forwards!important;pointer-events:none}
-
-/* hide main until unlocked */
-#topbar,#layout{opacity:0;transition:opacity .5s ease .2s}
-#topbar.visible,#layout.visible{opacity:1}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 </style>
 </head>
 <body>
 <div id="scanlines"></div>
 
-<!-- ══ BOOT + LOGIN OVERLAY ══════════════════════════════════ -->
+<!-- BOOT + LOGIN -->
 <div id="boot-overlay">
   <div id="boot-lines"></div>
   <div id="boot-bar-wrap">
@@ -365,16 +162,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div id="login-error"></div>
       <button id="login-submit" onclick="tryLogin()">[ CONNEXION ]</button>
       <div id="login-attempts">Tentatives restantes : <span id="attempts-left">3</span></div>
-      <div id="lockout-msg">⬛ ACCÈS VERROUILLÉ — INCIDENT SIGNALÉ À LA PC DISTRICT 10</div>
+      <div id="lockout-msg">⬛ ACCÈS VERROUILLÉ — INCIDENT SIGNALÉ À LA PC DISTRICT 08</div>
     </div>
   </div>
 </div>
 
+<!-- TOPBAR -->
 <div id="topbar">
   <div id="topbar-left">
     <span class="logo">▸ NCC-01</span>
     <span class="classified-badge">⬛ CONFIDENTIEL</span>
-    <span class="session-info">Administration Civile — Cité 13 / District 10</span>
+    <span style="font-size:11px;color:var(--text-dim)">Administration Civile — Cité 13 / District 08 / UNISCA</span>
   </div>
   <div id="topbar-right">
     <span><span class="status-dot"></span>Session active</span>
@@ -383,6 +181,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 </div>
 
+<!-- LAYOUT -->
 <div id="layout">
   <!-- SIDEBAR -->
   <div id="sidebar">
@@ -390,164 +189,127 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <span>EXPLORATEUR</span>
       <span style="color:var(--amber);font-size:9px">NCC-01</span>
     </div>
-    <div id="file-tree">
-      <!-- Root files -->
-      <div class="tree-file tree-root-file" onclick="openFile('README.md')">
-        <span class="file-icon">◆</span>
-        <span>README.md</span>
-      </div>
-      <div class="tree-file tree-root-file" onclick="openFile('ACCES.md')">
-        <span class="file-icon" style="color:var(--red)">▲</span>
-        <span>ACCES.md</span>
-      </div>
-      <div class="tree-file tree-root-file" onclick="openFile('VERNET.md')">
-        <span class="file-icon">◈</span>
-        <span>VERNET.md</span>
-      </div>
-
-      <!-- Rapports -->
-      <div class="tree-section">
-        <div class="tree-dir" onclick="toggleDir(this,'dir-rapports')">
-          <span class="dir-arrow">▶</span>
-          <span class="dir-icon" style="color:var(--amber)">▣</span>
-          <span>rapports/</span>
-          <span style="margin-left:auto;font-size:9px;color:var(--text-dim)">2</span>
-        </div>
-        <div class="tree-children" id="dir-rapports">
-          <div class="tree-file" onclick="openFile('rapports/NCC01-rapport-01.md')">
-            <span class="file-icon">◆</span><span>NCC01-rapport-01.md</span>
-          </div>
-          <div class="tree-file" onclick="openFile('rapports/NCC01-rapport-02.md')">
-            <span class="file-icon">◆</span><span>NCC01-rapport-02.md</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Protocoles -->
-      <div class="tree-section">
-        <div class="tree-dir" onclick="toggleDir(this,'dir-protocoles')">
-          <span class="dir-arrow">▶</span>
-          <span class="dir-icon" style="color:var(--amber)">▣</span>
-          <span>protocoles/</span>
-          <span style="margin-left:auto;font-size:9px;color:var(--text-dim)">2</span>
-        </div>
-        <div class="tree-children" id="dir-protocoles">
-          <div class="tree-file" onclick="openFile('protocoles/NCC-P1-controle.md')">
-            <span class="file-icon">◆</span><span>NCC-P1-controle.md</span>
-          </div>
-          <div class="tree-file" onclick="openFile('protocoles/NCC-P2-pilote.md')">
-            <span class="file-icon">◆</span><span>NCC-P2-pilote.md</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sujets -->
-      <div class="tree-section">
-        <div class="tree-dir" onclick="toggleDir(this,'dir-sujets')">
-          <span class="dir-arrow">▶</span>
-          <span class="dir-icon" style="color:var(--red)">▣</span>
-          <span>sujets/</span>
-          <span style="margin-left:auto;font-size:9px;color:var(--red)">⬛</span>
-        </div>
-        <div class="tree-children" id="dir-sujets">
-          <div class="tree-file" onclick="openFile('sujets/cohorte-01.md')">
-            <span class="file-icon" style="color:var(--red)">◆</span><span>cohorte-01.md</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Projets -->
-      <div class="tree-section">
-        <div class="tree-dir" onclick="toggleDir(this,'dir-projets')">
-          <span class="dir-arrow">▶</span>
-          <span class="dir-icon" style="color:var(--amber)">▣</span>
-          <span>projets/</span>
-          <span style="margin-left:auto;font-size:9px;color:var(--text-dim)">5</span>
-        </div>
-        <div class="tree-children" id="dir-projets">
-          <div class="tree-file" onclick="openFile('projets/NCC-P-neurochem.md')">
-            <span class="file-icon">◆</span><span>NCC-P-neurochem.md</span>
-          </div>
-          <div class="tree-file" onclick="openFile('projets/NCC-P-augmentation.md')">
-            <span class="file-icon">◆</span><span>NCC-P-augmentation.md</span>
-          </div>
-          <div class="tree-file" onclick="openFile('projets/NCC-P-conscience.md')">
-            <span class="file-icon">◆</span><span>NCC-P-conscience.md</span>
-          </div>
-          <div class="tree-file" onclick="openFile('projets/NCC-P-seconde-chance.md')">
-            <span class="file-icon">◆</span><span>NCC-P-seconde-chance.md</span>
-          </div>
-          <div class="tree-file" onclick="openFile('projets/NCC-P-xen.md')">
-            <span class="file-icon">◆</span><span>NCC-P-xen.md</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <div id="file-tree" id="file-tree"></div>
     <div id="sidebar-footer">
-      <div class="meta-row"><span>Ref.</span><span class="meta-val">NCC-01</span></div>
+      <div class="meta-row"><span>Référence</span><span class="meta-val">NCC-01</span></div>
+      <div class="meta-row"><span>Unité</span><span class="meta-val">UNISCA / D08</span></div>
       <div class="meta-row"><span>Phase</span><span class="meta-val" style="color:var(--amber)">1 — En cours</span></div>
       <div class="meta-row"><span>MàJ</span><span class="meta-val">14.03.2014</span></div>
-      <div class="meta-row"><span>Fichiers</span><span class="meta-val">12</span></div>
     </div>
   </div>
 
   <!-- MAIN -->
   <div id="main">
-    <div id="tabs"><div id="tabs-empty">Aucun fichier ouvert — sélectionnez un fichier dans l'explorateur</div></div>
+    <div id="tabs"><div id="tabs-empty">Sélectionnez un fichier dans l'explorateur</div></div>
     <div id="breadcrumb"><span class="crumb">NCC-01</span></div>
-    <div id="content-area">
-      <div id="file-content">
-        <div id="welcome">
-          <pre>
-  ╔══════════════════════════════════════════════╗
-  ║    ADMINISTRATION CIVILE — CITÉ 13 / D10     ║
-  ║         SYSTÈME DE GESTION NCC-01            ║
-  ║      Dr. E. Vernet · Chercheur Niv.4         ║
-  ╚══════════════════════════════════════════════╝</pre>
-          <p>Sélectionnez un fichier dans l'explorateur pour l'afficher.</p>
-          <p style="color:var(--text-dim);font-size:10px;margin-top:8px">Ou utilisez le terminal ci-dessous — tapez <span style="color:var(--green)">help</span></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- TERMINAL -->
-    <div id="terminal-pane">
-      <div id="terminal-tabs">
-        <div class="term-tab active">TERMINAL</div>
-        <div style="flex:1"></div>
-        <div style="font-size:10px;color:var(--text-dim);padding:0 12px">AC13/D10/LAB</div>
-      </div>
-      <div id="term-output"></div>
-      <div id="term-input-row">
-        <span id="term-prompt">AC13/D10/LAB &gt;&nbsp;</span>
-        <input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder=""/>
+    <div id="file-content">
+      <div id="welcome">
+        <pre>
+  ╔══════════════════════════════════════════════════╗
+  ║    ADMINISTRATION CIVILE — CITÉ 13 / DISTRICT 08 ║
+  ║    UNISCA — SECTION RECHERCHE                    ║
+  ║    SYSTÈME DE GESTION NCC-01                     ║
+  ║    Dr. E. Vernet · Chercheur Civil Agréé Niv.4   ║
+  ╚══════════════════════════════════════════════════╝</pre>
+        <p style="font-size:11px">Sélectionnez un fichier dans l'explorateur pour l'afficher.</p>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// ─── CLOCK ───────────────────────────────
+// ── CLOCK ─────────────────────────────────────────────────
 function updateClock(){
   const d=new Date();
-  document.getElementById('clock').textContent=
-    d.toLocaleDateString('fr-FR')+' '+d.toTimeString().slice(0,8);
+  document.getElementById('clock').textContent=d.toLocaleDateString('fr-FR')+' '+d.toTimeString().slice(0,8);
 }
 updateClock();setInterval(updateClock,1000);
 
-// ─── FILE DATA ───────────────────────────
-const FILES={
-  'README.md':{
-    title:'README.md',
-    path:'NCC-01',
-    render:()=>`
+// ── FILE TREE DEFINITION ──────────────────────────────────
+// Structure: {id, label, icon, type:'dir'|'file', children?, fileKey?}
+const TREE=[
+  {id:'f-readme',   label:'README.md',  icon:'◆', type:'file', fileKey:'README.md'},
+  {id:'f-acces',    label:'ACCES.md',   icon:'▲', iconColor:'var(--red)', type:'file', fileKey:'ACCES.md'},
+  {id:'f-vernet',   label:'VERNET.md',  icon:'◈', type:'file', fileKey:'VERNET.md'},
+  {id:'d-projets',  label:'projets/',   icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+    {id:'d-neurochem', label:'NCC-P-neurochem/', icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+      {id:'f-nc-fiche',  label:'fiche-projet.md',      icon:'◆', type:'file', fileKey:'projets/NCC-P-neurochem/fiche-projet.md'},
+      {id:'f-nc-cdc',    label:'cahier-des-charges.md', icon:'◆', type:'file', fileKey:'projets/NCC-P-neurochem/cahier-des-charges.md'},
+      {id:'d-nc-rapports', label:'rapports/', icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+        {id:'f-r1', label:'rapport-01.md', icon:'◆', type:'file', fileKey:'projets/NCC-P-neurochem/rapports/rapport-01.md'},
+        {id:'f-r2', label:'rapport-02.md', icon:'◆', type:'file', fileKey:'projets/NCC-P-neurochem/rapports/rapport-02.md'},
+      ]},
+      {id:'d-nc-proto', label:'protocoles/', icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+        {id:'f-p1', label:'NCC-P1-controle.md',  icon:'◆', type:'file', fileKey:'projets/NCC-P-neurochem/protocoles/NCC-P1-controle.md'},
+        {id:'f-p2', label:'NCC-P2-pilote.md',    icon:'◆', type:'file', fileKey:'projets/NCC-P-neurochem/protocoles/NCC-P2-pilote.md'},
+      ]},
+      {id:'d-nc-sujets', label:'sujets/', icon:'▣', iconColor:'var(--red)', type:'dir', children:[
+        {id:'f-s1', label:'cohorte-01.md', icon:'◆', iconColor:'var(--red)', type:'file', fileKey:'projets/NCC-P-neurochem/sujets/cohorte-01.md'},
+      ]},
+    ]},
+    {id:'d-aug',    label:'NCC-P-augmentation/',   icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+      {id:'f-aug',  label:'fiche-projet.md', icon:'◆', type:'file', fileKey:'projets/NCC-P-augmentation/fiche-projet.md'},
+    ]},
+    {id:'d-cons',   label:'NCC-P-conscience/',      icon:'▣', iconColor:'var(--red)', type:'dir', children:[
+      {id:'f-cons', label:'fiche-projet.md', icon:'◆', iconColor:'var(--red)', type:'file', fileKey:'projets/NCC-P-conscience/fiche-projet.md'},
+    ]},
+    {id:'d-sc',     label:'NCC-P-seconde-chance/',  icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+      {id:'f-sc',   label:'fiche-projet.md', icon:'◆', type:'file', fileKey:'projets/NCC-P-seconde-chance/fiche-projet.md'},
+    ]},
+    {id:'d-xen',    label:'NCC-P-xen/',             icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+      {id:'f-xen',  label:'fiche-projet.md', icon:'◆', type:'file', fileKey:'projets/NCC-P-xen/fiche-projet.md'},
+    ]},
+  ]},
+];
+
+// ── RENDER TREE ───────────────────────────────────────────
+function renderTree(nodes, depth, container){
+  nodes.forEach(node=>{
+    const row = document.createElement('div');
+    row.className = 'tree-item';
+    row.dataset.id = node.id;
+    if(node.type==='file') row.dataset.fileKey = node.fileKey||'';
+
+    const indentW = depth * 14;
+    row.innerHTML=`
+      <span class="ti-indent" style="width:${indentW}px"></span>
+      ${node.type==='dir'
+        ? `<span class="ti-arrow" id="arr-${node.id}">▶</span>`
+        : `<span style="width:10px;flex-shrink:0"></span>`}
+      <span class="ti-icon" style="color:${node.iconColor||'var(--text-dim)'}">${node.icon}</span>
+      <span class="ti-name">${node.label}</span>
+    `;
+
+    if(node.type==='dir'){
+      const childWrap = document.createElement('div');
+      childWrap.className = 'tree-children';
+      childWrap.id = 'ch-'+node.id;
+      row.onclick = ()=>{
+        const open = childWrap.classList.toggle('open');
+        const arr = document.getElementById('arr-'+node.id);
+        if(arr) arr.classList.toggle('open', open);
+      };
+      container.appendChild(row);
+      renderTree(node.children||[], depth+1, childWrap);
+      container.appendChild(childWrap);
+    } else {
+      row.onclick = ()=> openFile(node.fileKey, row);
+      container.appendChild(row);
+    }
+  });
+}
+const treeRoot = document.getElementById('file-tree');
+renderTree(TREE, 0, treeRoot);
+
+// ── FILE CONTENT ──────────────────────────────────────────
+const FILES = {
+'README.md':{title:'README.md',path:'NCC-01',render:()=>`
 <div class="doc-content">
 <div class="stamp">CONFIDENTIEL</div>
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Référence dossier</span><span class="doc-val">NCC-01</span></div>
   <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet — Chercheur Civil Agréé, Niveau 4</span></div>
-  <div class="doc-header-row"><span class="doc-label">Localisation</span><span class="doc-val">Laboratoire Souterrain Sectoriel — District 10, Le Terminal</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
   <div class="doc-header-row"><span class="doc-label">État du projet</span><span class="doc-val" style="color:var(--amber)">Phase 1 — En cours</span></div>
   <div class="doc-header-row"><span class="doc-label">Dernière MàJ</span><span class="doc-val">14.03.2014</span></div>
   <div class="doc-header-row"><span class="doc-label">Prochain rapport</span><span class="doc-val">01.04.2014</span></div>
@@ -555,31 +317,28 @@ const FILES={
 <div class="doc-section">
   <div class="doc-section-title">PRÉSENTATION</div>
   <p class="doc-p">Ce dépôt centralise les documents de suivi du projet NCC-01, relatif au développement et au déploiement de composés neurochimiques à diffusion collective sur les populations civiles de Cité 13.</p>
-  <div class="doc-alert red">Tout accès non autorisé à ce dépôt constitue une violation des directives de l'Administration Civile et sera traité en conséquence.</div>
+  <div class="doc-alert red">Tout accès non autorisé constitue une violation des directives de l'Administration Civile et sera traité en conséquence.</div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">STRUCTURE DU DÉPÔT</div>
   <table class="doc-table">
     <tr><th>Répertoire</th><th>Contenu</th><th>Accès</th></tr>
-    <tr><td>rapports/</td><td>Rapports intermédiaires par semaine</td><td><span class="tag amber">Niv.3+</span></td></tr>
-    <tr><td>protocoles/</td><td>Protocoles de phase</td><td><span class="tag amber">Niv.3+</span></td></tr>
-    <tr><td>sujets/</td><td>Données de cohortes</td><td><span class="tag red">Niv.4+</span></td></tr>
-    <tr><td>projets/</td><td>Fiches projets de recherche</td><td><span class="tag amber">Niv.3+</span></td></tr>
+    <tr><td>projets/NCC-P-neurochem/</td><td>Projet neurochimique principal — rapports, protocoles, sujets</td><td><span class="tag amber">Niv.3+</span></td></tr>
+    <tr><td>projets/NCC-P-augmentation/</td><td>Augmentation biologique</td><td><span class="tag amber">Niv.3+</span></td></tr>
+    <tr><td>projets/NCC-P-conscience/</td><td>Conscience résiduelle</td><td><span class="tag red">Niv.4+</span></td></tr>
+    <tr><td>projets/NCC-P-seconde-chance/</td><td>Reconditionnement comportemental</td><td><span class="tag amber">Niv.3+</span></td></tr>
+    <tr><td>projets/NCC-P-xen/</td><td>Étude biologique de Xen</td><td><span class="tag amber">Niv.3+</span></td></tr>
   </table>
 </div>
-<div class="quote-block">« Ce document ne doit en aucun cas être partagé, cité ou reproduit en dehors des canaux officiels de l'Administration. Toute anomalie d'accès doit être signalée immédiatement au Dr. Vernet. »</div>
-</div>`
-  },
-  'ACCES.md':{
-    title:'ACCES.md',
-    path:'NCC-01',
-    render:()=>`
+</div>`},
+
+'ACCES.md':{title:'ACCES.md',path:'NCC-01',render:()=>`
 <div class="doc-content">
 <div class="stamp">ACCÈS RESTREINT</div>
 <div class="doc-section">
   <div class="doc-section-title">AVERTISSEMENT</div>
-  <div class="doc-alert red">Ce système est réservé au personnel autorisé de niveau 3 et supérieur rattaché au Laboratoire Souterrain du District 10.</div>
-  <p class="doc-p">Toute tentative de connexion non autorisée est enregistrée et transmise automatiquement à la Protection Civile du District.</p>
+  <div class="doc-alert red">Ce système est réservé au personnel autorisé de niveau 3 et supérieur rattaché à l'UNISCA — Section Recherche, District 08.</div>
+  <p class="doc-p">Toute tentative de connexion non autorisée est enregistrée et transmise à la Protection Civile du District 08.</p>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">PERSONNEL AUTORISÉ</div>
@@ -598,18 +357,15 @@ const FILES={
     <tr><td><span class="tag red">Niv.4</span></td><td>Données sujets, vault, accès complet</td></tr>
   </table>
 </div>
-</div>`
-  },
-  'VERNET.md':{
-    title:'VERNET.md',
-    path:'NCC-01',
-    render:()=>`
+</div>`},
+
+'VERNET.md':{title:'VERNET.md',path:'NCC-01',render:()=>`
 <div class="doc-content">
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Identité</span><span class="doc-val">Dr. Édouard Vernet</span></div>
   <div class="doc-header-row"><span class="doc-label">Né le</span><span class="doc-val">1970 — Rennes, France</span></div>
   <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val">Chercheur Civil Agréé — Niveau 4</span></div>
-  <div class="doc-header-row"><span class="doc-label">Affectation</span><span class="doc-val">District 10 / Laboratoire Souterrain — Le Terminal</span></div>
+  <div class="doc-header-row"><span class="doc-label">Affectation</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
   <div class="doc-header-row"><span class="doc-label">Depuis</span><span class="doc-val">2014</span></div>
 </div>
 <div class="doc-section">
@@ -630,177 +386,15 @@ const FILES={
   <div class="doc-section-title">CITATION</div>
   <div class="quote-block">« On m'a reproché toute ma carrière de traiter l'être humain comme un objet d'étude. Comme si c'était une insulte. La science ne se soucie pas de ce qu'on préférerait. Elle regarde ce qui est. »</div>
 </div>
-</div>`
-  },
-  'rapports/NCC01-rapport-01.md':{
-    title:'NCC01-rapport-01.md',
-    path:'NCC-01 / rapports',
-    render:()=>`
-<div class="doc-content">
-<div class="doc-header">
-  <div class="doc-header-row"><span class="doc-label">Type</span><span class="doc-val">Rapport intermédiaire — Phase 1 / Semaine 1</span></div>
-  <div class="doc-header-row"><span class="doc-label">Date</span><span class="doc-val">14.03.2014</span></div>
-  <div class="doc-header-row"><span class="doc-label">Rédigé par</span><span class="doc-val">Dr. E. Vernet</span></div>
-  <div class="doc-header-row"><span class="doc-label">Cohorte</span><span class="doc-val">C-01 — 12 sujets / 8H, 4F / 24 à 51 ans</span></div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">SITUATION</div>
-  <p class="doc-p">La première semaine de la phase de tests en environnement contrôlé s'est déroulée conformément au protocole établi. Les douze sujets de la cohorte C-01 ont reçu une première administration du Composé A par voie hydrique, à dosage minimal, sans information préalable sur la nature de l'exposition.</p>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">OBSERVATIONS</div>
-  <p class="doc-p">Aucun effet secondaire immédiat notable sur les capacités motrices ou cognitives des sujets. Les relevés comportementaux des 48 premières heures ne montrent pas de changement significatif — conforme aux attentes. L'action du Composé A est progressive et ne doit pas être perceptible avant la troisième semaine d'exposition.</p>
-  <div class="doc-alert">Deux sujets présentent des profils neurologiques atypiques identifiés lors des examens préliminaires. Suivi renforcé. Dosage potentiellement à revoir à la hausse.</div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">PROCHAINES ÉTAPES</div>
-  <ul class="doc-list">
-    <li>Introduction du Composé C en parallèle du Composé A à partir de la semaine 2</li>
-    <li>Initier le conditionnement positif simultanément à la phase de régulation passive</li>
-    <li>Premiers relevés comportementaux significatifs attendus en semaine 3</li>
-  </ul>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">NOTE DU RESPONSABLE</div>
-  <div class="quote-block">« Les conditions du Terminal sont satisfaisantes pour ce premier cycle. Le flux de transit offre une discrétion opérationnelle difficile à trouver ailleurs. Je reste convaincu que la phase pilote pourra démarrer dans les délais prévus. »<br/>— Dr. E. Vernet</div>
-</div>
-</div>`
-  },
-  'rapports/NCC01-rapport-02.md':{
-    title:'NCC01-rapport-02.md',
-    path:'NCC-01 / rapports',
-    render:()=>`
-<div class="doc-content">
-<div class="doc-header">
-  <div class="doc-header-row"><span class="doc-label">Type</span><span class="doc-val">Rapport intermédiaire — Phase 1 / Semaine 2</span></div>
-  <div class="doc-header-row"><span class="doc-label">Date</span><span class="doc-val">21.03.2014</span></div>
-  <div class="doc-header-row"><span class="doc-label">Rédigé par</span><span class="doc-val">Dr. E. Vernet</span></div>
-  <div class="doc-header-row"><span class="doc-label">Cohorte</span><span class="doc-val">C-01 — 12 sujets actifs</span></div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">SITUATION</div>
-  <p class="doc-p">Introduction du Composé C selon le calendrier prévu. Administration combinée A+C par voie hydrique sur l'ensemble de la cohorte depuis le 17.03. Les premiers effets du Composé A commencent à se manifester sur les sujets à profil neurologique standard.</p>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">OBSERVATIONS — SEMAINE 2</div>
-  <table class="doc-table">
-    <tr><th>Indicateur</th><th>S1</th><th>S2</th><th>Tendance</th></tr>
-    <tr><td>Contestation verbale</td><td>14 incidents</td><td>9 incidents</td><td style="color:var(--green)">▼ -36%</td></tr>
-    <tr><td>Tentatives regroupement</td><td>3</td><td>1</td><td style="color:var(--green)">▼ -67%</td></tr>
-    <tr><td>Compliance aux directives</td><td>62%</td><td>71%</td><td style="color:var(--green)">▲ +9pts</td></tr>
-    <tr><td>Profils atypiques (résistance)</td><td>2</td><td>2</td><td style="color:var(--amber)">— stable</td></tr>
-  </table>
-  <div class="doc-alert">Sujets C01-04 et C01-09 maintiennent une résistance partielle. Protocole différencié engagé. Dosage Composé A porté à +60% pour C01-04.</div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">NOTE DU RESPONSABLE</div>
-  <div class="quote-block">« Les chiffres de la semaine 2 sont encourageants — en particulier la réduction de la contestation verbale, qui est l'indicateur le plus visible et le plus risqué à court terme. Le conditionnement positif du Composé C prendra encore deux à trois semaines avant de produire des effets mesurables sur les comportements de compliance. Je maintiens les projections initiales. »<br/>— Dr. E. Vernet</div>
-</div>
-</div>`
-  },
-  'protocoles/NCC-P1-controle.md':{
-    title:'NCC-P1-controle.md',
-    path:'NCC-01 / protocoles',
-    render:()=>`
-<div class="doc-content">
-<div class="doc-header">
-  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01-P1</span></div>
-  <div class="doc-header-row"><span class="doc-label">Phase</span><span class="doc-val">1 — Environnement contrôlé</span></div>
-  <div class="doc-header-row"><span class="doc-label">Durée estimée</span><span class="doc-val">3 mois</span></div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">COMPOSÉS EN TEST</div>
-  <div class="doc-alert green">Composé A — "Régulateur passif"</div>
-  <p class="doc-p">Sédatif neurologique à très faible dose. Cible : amygdale. Réduit les réponses émotionnelles fortes (colère, peur, agitation). Effet progressif sur 3 semaines. Voie hydrique.</p>
-  <div class="doc-alert green">Composé B — "Inhibiteur de contestation"</div>
-  <p class="doc-p">Cible : cortex préfrontal ventromédian. Réduit la capacité du sujet à formuler et défendre une position contraire. Fonctions cognitives préservées. Voie alimentaire — intégré aux rations.</p>
-  <div class="doc-alert green">Composé C — "Renforçateur de compliance"</div>
-  <p class="doc-p">Stimulation légère du circuit de récompense (noyau accumbens). Conditionnement positif inconscient associé aux comportements de coopération. Voie hydrique ou alimentaire.</p>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">COMPORTEMENTS CIBLÉS</div>
-  <ul class="doc-list">
-    <li class="pri">Contestation verbale directe face aux agents de l'Union</li>
-    <li class="pri">Regroupement non autorisé / organisation collective</li>
-    <li>Résistance passive aux directives administratives</li>
-    <li>Diffusion d'informations contraires aux intérêts de l'Union</li>
-    <li>Agitation en réponse à une contrainte</li>
-  </ul>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">COMPORTEMENTS À RENFORCER</div>
-  <ul class="doc-list">
-    <li class="ok">Respect spontané des consignes sans présence coercitive</li>
-    <li class="ok">Coopération lors des contrôles et recensements</li>
-    <li class="ok">Attachement progressif aux structures et routines imposées</li>
-  </ul>
-</div>
-</div>`
-  },
-  'protocoles/NCC-P2-pilote.md':{
-    title:'NCC-P2-pilote.md',
-    path:'NCC-01 / protocoles',
-    render:()=>`
-<div class="doc-content">
-<div class="doc-header">
-  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01-P2</span></div>
-  <div class="doc-header-row"><span class="doc-label">Phase</span><span class="doc-val">2 — Secteur pilote</span></div>
-  <div class="doc-header-row"><span class="doc-label">Durée estimée</span><span class="doc-val">2 mois (démarrage conditionnel aux résultats P1)</span></div>
-  <div class="doc-header-row"><span class="doc-label">Périmètre</span><span class="doc-val">Secteur résidentiel restreint — District 10 (à définir)</span></div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">OBJECTIF</div>
-  <p class="doc-p">Déploiement discret des composés validés en Phase 1 sur un secteur résidentiel réel, en coordination avec la Protection Civile locale. Validation de l'efficacité à grande échelle et ajustement des formulations selon les profils de terrain.</p>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">MODALITÉS DE DÉPLOIEMENT</div>
-  <ul class="doc-list">
-    <li>Intégration aux circuits d'eau sectoriels — Composé A + C</li>
-    <li>Intégration aux rations alimentaires de secteur — Composé B</li>
-    <li>Dosages ajustables par zone selon données PC</li>
-  </ul>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">MESURES DE CONTRÔLE</div>
-  <p class="doc-p">Relevé des incidents comportementaux avant/après exposition, comparaison avec un secteur témoin non exposé. Données remontées via agents de la Protection Civile du District.</p>
-  <div class="doc-alert">Le secteur témoin doit être géographiquement et démographiquement comparable au secteur exposé. Sélection sous responsabilité Dr. Vernet.</div>
-</div>
-</div>`
-  },
-  'sujets/cohorte-01.md':{
-    title:'cohorte-01.md',
-    path:'NCC-01 / sujets',
-    render:()=>`
-<div class="doc-content">
-<div class="stamp">NIVEAU 4 REQUIS</div>
-<div class="doc-header">
-  <div class="doc-header-row"><span class="doc-label">Cohorte</span><span class="doc-val">C-01</span></div>
-  <div class="doc-header-row"><span class="doc-label">Effectif initial</span><span class="doc-val">12 sujets (8H / 4F)</span></div>
-  <div class="doc-header-row"><span class="doc-label">Tranche d'âge</span><span class="doc-val">24 – 51 ans</span></div>
-  <div class="doc-header-row"><span class="doc-label">Origine</span><span class="doc-val">Transit Terminal D10 — non enregistrés localement</span></div>
-  <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--red)">Rétention discrète — accord PC District</span></div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">SUIVI INDIVIDUEL — CAS NOTABLES</div>
-  <div class="doc-alert red">C01-04 — Homme, 38 ans — Profil ATYPIQUE. Résistance partielle Composé A. Dosage porté à +60%. Surveillance renforcée.</div>
-  <div class="doc-alert red">C01-09 — Femme, 31 ans — Profil ATYPIQUE. Résistance élevée. Protocole alternatif B direct en préparation.</div>
-  <div class="doc-alert green">C01 restants (×10) — Réponse conforme aux modèles. Évolution comportementale nominale.</div>
-</div>
-<div class="doc-section">
-  <div class="doc-section-title">DONNÉES COMPLÈTES</div>
-  <div class="doc-alert red">Identités complètes et données biométriques — Archive chiffrée. Référence : VAULT-C01. Accès niveau 4 avec authentification secondaire.</div>
-</div>
-</div>`
-  },
-  'projets/NCC-P-neurochem.md':{
-    title:'NCC-P-neurochem.md',
-    path:'NCC-01 / projets',
-    render:()=>`
+</div>`},
+
+'projets/NCC-P-neurochem/fiche-projet.md':{title:'fiche-projet.md',path:'NCC-01 / projets / NCC-P-neurochem',render:()=>`
 <div class="doc-content">
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Projet</span><span class="doc-val">Suppresseurs neurochimiques à diffusion collective</span></div>
   <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-P-NEUROCHEM</span></div>
   <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--amber)">Phase 1 active</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">OBJECTIF</div>
@@ -816,50 +410,220 @@ const FILES={
   </table>
 </div>
 <div class="doc-section">
+  <div class="doc-section-title">ARBORESCENCE DU PROJET</div>
+  <ul class="doc-list">
+    <li class="ok">cahier-des-charges.md — spécifications complètes</li>
+    <li class="ok">rapports/ — suivi hebdomadaire de la Phase 1</li>
+    <li class="ok">protocoles/ — procédures des phases 1 et 2</li>
+    <li>sujets/ — données cohortes <span class="tag red">Niv.4</span></li>
+  </ul>
+</div>
+<div class="doc-section">
   <div class="doc-section-title">NOTE DU RESPONSABLE</div>
   <div class="quote-block">« Ce que je propose ici n'est pas un outil de répression. C'est un outil de prévention. Un citoyen qui ne ressent pas le besoin de contester n'est pas un citoyen qu'on a brisé — c'est un citoyen qu'on a stabilisé. »<br/>— Dr. E. Vernet</div>
 </div>
-</div>`
-  },
-  'projets/NCC-P-augmentation.md':{
-    title:'NCC-P-augmentation.md',
-    path:'NCC-01 / projets',
-    render:()=>`
+</div>`},
+
+'projets/NCC-P-neurochem/cahier-des-charges.md':{title:'cahier-des-charges.md',path:'NCC-01 / projets / NCC-P-neurochem',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01 — CDC-NEUROCHEM</span></div>
+  <div class="doc-header-row"><span class="doc-label">Auteur</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Classification</span><span class="doc-val">Restreint — Usage Administratif Interne</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CONTEXTE</div>
+  <p class="doc-p">La gestion comportementale des populations civiles repose aujourd'hui sur des moyens essentiellement mécaniques — surveillance, couvre-feux, présence de la Protection Civile. Ces dispositifs agissent sur les comportements une fois qu'ils se manifestent, mais n'agissent pas en amont. Ce projet propose une approche préventive, discrète et modulable.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPOSÉS</div>
+  <div class="doc-alert green">Composé A — "Régulateur passif" — Voie hydrique</div>
+  <p class="doc-p">Sédatif neurologique à très faible dose. Cible l'amygdale. Réduit les réponses émotionnelles fortes. Effet progressif sur 3 semaines. Non perceptible par le sujet.</p>
+  <div class="doc-alert green">Composé B — "Inhibiteur de contestation" — Voie alimentaire</div>
+  <p class="doc-p">Cible le cortex préfrontal ventromédian. Réduit la capacité à formuler et défendre une position contraire. Fonctions cognitives préservées.</p>
+  <div class="doc-alert green">Composé C — "Renforçateur de compliance" — Voie hydrique/alimentaire</div>
+  <p class="doc-p">Stimulation légère du circuit de récompense. Conditionnement positif inconscient associé aux comportements de coopération.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPORTEMENTS CIBLÉS</div>
+  <ul class="doc-list">
+    <li class="pri">Contestation verbale face aux agents de l'Union</li>
+    <li class="pri">Regroupement non autorisé / organisation collective</li>
+    <li>Résistance passive aux directives administratives</li>
+    <li>Diffusion d'informations contraires aux intérêts de l'Union</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CALENDRIER PRÉVISIONNEL</div>
+  <table class="doc-table">
+    <tr><th>Phase</th><th>Durée</th><th>Statut</th></tr>
+    <tr><td>Formulation + tests contrôlés</td><td>3 mois</td><td style="color:var(--amber)">En cours</td></tr>
+    <tr><td>Déploiement pilote</td><td>2 mois</td><td style="color:var(--text-dim)">En attente</td></tr>
+    <tr><td>Analyse et ajustements</td><td>1 mois</td><td style="color:var(--text-dim)">En attente</td></tr>
+    <tr><td>Déploiement sectoriel</td><td>À définir</td><td style="color:var(--text-dim)">—</td></tr>
+  </table>
+</div>
+</div>`},
+
+'projets/NCC-P-neurochem/rapports/rapport-01.md':{title:'rapport-01.md',path:'NCC-01 / projets / NCC-P-neurochem / rapports',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Type</span><span class="doc-val">Rapport intermédiaire — Phase 1 / Semaine 1</span></div>
+  <div class="doc-header-row"><span class="doc-label">Date</span><span class="doc-val">14.03.2014</span></div>
+  <div class="doc-header-row"><span class="doc-label">Rédigé par</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Cohorte</span><span class="doc-val">C-01 — 12 sujets / 8H, 4F / 24 à 51 ans</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">SITUATION</div>
+  <p class="doc-p">La première semaine de la phase de tests en environnement contrôlé s'est déroulée conformément au protocole. Les douze sujets ont reçu une première administration du Composé A par voie hydrique, à dosage minimal, sans information préalable.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">OBSERVATIONS</div>
+  <p class="doc-p">Aucun effet secondaire immédiat notable sur les capacités motrices ou cognitives. Les relevés comportementaux des 48 premières heures ne montrent pas de changement significatif — conforme aux attentes. L'action du Composé A est progressive, non perceptible avant S3.</p>
+  <div class="doc-alert">Deux sujets présentent des profils neurologiques atypiques. Suivi renforcé. Dosage potentiellement à revoir à la hausse.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PROCHAINES ÉTAPES</div>
+  <ul class="doc-list">
+    <li>Introduction du Composé C en parallèle dès la semaine 2</li>
+    <li>Premiers relevés comportementaux significatifs attendus en S3</li>
+  </ul>
+</div>
+<div class="quote-block">« Les conditions sont satisfaisantes. Le flux de transit offre une discrétion opérationnelle optimale. Phase pilote confirmée dans les délais. »<br/>— Dr. E. Vernet</div>
+</div>`},
+
+'projets/NCC-P-neurochem/rapports/rapport-02.md':{title:'rapport-02.md',path:'NCC-01 / projets / NCC-P-neurochem / rapports',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Type</span><span class="doc-val">Rapport intermédiaire — Phase 1 / Semaine 2</span></div>
+  <div class="doc-header-row"><span class="doc-label">Date</span><span class="doc-val">21.03.2014</span></div>
+  <div class="doc-header-row"><span class="doc-label">Rédigé par</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Cohorte</span><span class="doc-val">C-01 — 12 sujets actifs</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">SITUATION</div>
+  <p class="doc-p">Introduction du Composé C selon le calendrier prévu. Administration combinée A+C depuis le 17.03. Les premiers effets du Composé A se manifestent sur les sujets à profil standard.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">RÉSULTATS — SEMAINE 2</div>
+  <table class="doc-table">
+    <tr><th>Indicateur</th><th>S1</th><th>S2</th><th>Tendance</th></tr>
+    <tr><td>Contestation verbale</td><td>14 incidents</td><td>9 incidents</td><td style="color:var(--green)">▼ -36%</td></tr>
+    <tr><td>Tentatives regroupement</td><td>3</td><td>1</td><td style="color:var(--green)">▼ -67%</td></tr>
+    <tr><td>Compliance aux directives</td><td>62%</td><td>71%</td><td style="color:var(--green)">▲ +9pts</td></tr>
+    <tr><td>Profils atypiques résistants</td><td>2</td><td>2</td><td style="color:var(--amber)">— stable</td></tr>
+  </table>
+  <div class="doc-alert">C01-04 et C01-09 maintiennent une résistance partielle. Protocole différencié engagé. Dosage A porté à +60% pour C01-04.</div>
+</div>
+<div class="quote-block">« Les chiffres de la semaine 2 sont encourageants. Le conditionnement positif du Composé C prendra encore 2 à 3 semaines. Je maintiens les projections initiales. »<br/>— Dr. E. Vernet</div>
+</div>`},
+
+'projets/NCC-P-neurochem/protocoles/NCC-P1-controle.md':{title:'NCC-P1-controle.md',path:'NCC-01 / projets / NCC-P-neurochem / protocoles',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01-P1</span></div>
+  <div class="doc-header-row"><span class="doc-label">Phase</span><span class="doc-val">1 — Environnement contrôlé</span></div>
+  <div class="doc-header-row"><span class="doc-label">Durée estimée</span><span class="doc-val">3 mois</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPOSÉS EN TEST</div>
+  <div class="doc-alert green">Composé A — "Régulateur passif" — Amygdale — Voie hydrique</div>
+  <div class="doc-alert green">Composé B — "Inhibiteur de contestation" — Cortex préfrontal — Voie alimentaire</div>
+  <div class="doc-alert green">Composé C — "Renforçateur de compliance" — Noyau accumbens — Voie hydrique/alimentaire</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPORTEMENTS CIBLÉS</div>
+  <ul class="doc-list">
+    <li class="pri">Contestation verbale directe</li>
+    <li class="pri">Organisation collective non autorisée</li>
+    <li>Résistance passive aux directives</li>
+    <li>Diffusion d'informations contraires</li>
+    <li class="ok">Renforcer : respect spontané des consignes</li>
+    <li class="ok">Renforcer : coopération lors des contrôles</li>
+  </ul>
+</div>
+</div>`},
+
+'projets/NCC-P-neurochem/protocoles/NCC-P2-pilote.md':{title:'NCC-P2-pilote.md',path:'NCC-01 / projets / NCC-P-neurochem / protocoles',render:()=>`
+<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-01-P2</span></div>
+  <div class="doc-header-row"><span class="doc-label">Phase</span><span class="doc-val">2 — Secteur pilote</span></div>
+  <div class="doc-header-row"><span class="doc-label">Durée estimée</span><span class="doc-val">2 mois (conditionnel résultats P1)</span></div>
+  <div class="doc-header-row"><span class="doc-label">Périmètre</span><span class="doc-val">Secteur résidentiel restreint — District 08 (à définir)</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Déploiement des composés validés en Phase 1 sur un secteur résidentiel réel, en coordination avec la Protection Civile locale. Validation à grande échelle et ajustement des formulations selon les profils de terrain.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">MODALITÉS</div>
+  <ul class="doc-list">
+    <li>Circuits d'eau sectoriels — Composé A + C</li>
+    <li>Rations alimentaires de secteur — Composé B</li>
+    <li>Dosages ajustables par zone selon données PC</li>
+    <li>Secteur témoin non exposé pour comparaison</li>
+  </ul>
+</div>
+</div>`},
+
+'projets/NCC-P-neurochem/sujets/cohorte-01.md':{title:'cohorte-01.md',path:'NCC-01 / projets / NCC-P-neurochem / sujets',render:()=>`
+<div class="doc-content">
+<div class="stamp">NIVEAU 4 REQUIS</div>
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Cohorte</span><span class="doc-val">C-01</span></div>
+  <div class="doc-header-row"><span class="doc-label">Effectif initial</span><span class="doc-val">12 sujets (8H / 4F)</span></div>
+  <div class="doc-header-row"><span class="doc-label">Tranche d'âge</span><span class="doc-val">24 – 51 ans</span></div>
+  <div class="doc-header-row"><span class="doc-label">Origine</span><span class="doc-val">Transit — non enregistrés localement</span></div>
+  <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--red)">Rétention discrète — accord PC District 08</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">SUIVI INDIVIDUEL — CAS NOTABLES</div>
+  <div class="doc-alert red">C01-04 — Homme, 38 ans — Profil ATYPIQUE. Résistance partielle Composé A. Dosage +60%. Surveillance renforcée.</div>
+  <div class="doc-alert red">C01-09 — Femme, 31 ans — Profil ATYPIQUE. Résistance élevée. Protocole B direct en préparation.</div>
+  <div class="doc-alert green">C01 restants (×10) — Réponse conforme aux modèles. Évolution nominale.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">DONNÉES COMPLÈTES</div>
+  <div class="doc-alert red">Identités complètes et données biométriques — Archive chiffrée. Référence : VAULT-C01. Accès niveau 4 + authentification secondaire.</div>
+</div>
+</div>`},
+
+'projets/NCC-P-augmentation/fiche-projet.md':{title:'fiche-projet.md',path:'NCC-01 / projets / NCC-P-augmentation',render:()=>`
 <div class="doc-content">
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Projet</span><span class="doc-val">Augmentation biologique du corps humain</span></div>
   <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-P-AUG</span></div>
   <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--text-dim)">Recherche préliminaire</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">OBJECTIF</div>
-  <p class="doc-p">Élargir l'application des protocoles d'augmentation Combine aux sujets civils non militaires, en réduisant les taux de rejet organique observés sur les cohortes actuelles. Renforcement physique et résistance accrue — à des fins militaires ou civiles.</p>
+  <p class="doc-p">Élargir l'application des protocoles d'augmentation Combine aux sujets civils non militaires, en réduisant les taux de rejet organique. Renforcement physique et résistance accrue — à des fins militaires ou civiles. Possibilité d'utilisation de technologies Combine.</p>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">AXES DE RECHERCHE</div>
   <ul class="doc-list">
     <li>Réduction du rejet des greffons mécaniques par les tissus organiques</li>
     <li>Compatibilité biologique avec les technologies Combine standard</li>
-    <li>Extension du spectre des candidats viables (hors recrutement militaire)</li>
+    <li>Extension du spectre des candidats viables hors recrutement militaire</li>
     <li>Protocoles d'adaptation progressive pour sujets civils non préparés</li>
   </ul>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">VERROUS TECHNIQUES</div>
-  <div class="doc-alert">Le rejet organique des augmentations mécaniques reste le principal obstacle. Les protocoles actuels sont conçus pour des sujets sélectionnés et préparés. L'adaptation au civil général nécessite une refonte partielle des protocoles d'implantation.</div>
+  <div class="doc-alert">Le rejet organique reste le principal obstacle. Les protocoles actuels sont conçus pour des sujets sélectionnés. L'adaptation au civil général nécessite une refonte partielle des protocoles d'implantation.</div>
 </div>
-</div>`
-  },
-  'projets/NCC-P-conscience.md':{
-    title:'NCC-P-conscience.md',
-    path:'NCC-01 / projets',
-    render:()=>`
+</div>`},
+
+'projets/NCC-P-conscience/fiche-projet.md':{title:'fiche-projet.md',path:'NCC-01 / projets / NCC-P-conscience',render:()=>`
 <div class="doc-content">
 <div class="stamp">CLASSIFIÉ</div>
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Projet</span><span class="doc-val">Expérimentation de la "conscience résiduelle"</span></div>
   <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-P-CR</span></div>
   <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--amber)">En cours — données actives</span></div>
+  <div class="doc-header-row"><span class="doc-label">Accès</span><span class="doc-val"><span class="tag red">Niv.4 exclusif</span></span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">OBJECTIF</div>
@@ -867,29 +631,27 @@ const FILES={
 </div>
 <div class="doc-section">
   <div class="doc-section-title">MÉTHODOLOGIE</div>
-  <p class="doc-p">Cartographie progressive du seuil, sujet après sujet. Chaque cycle repousse légèrement les limites théoriques établies par le cycle précédent. Les résultats récents amènent à revoir certaines de ces limites à la hausse.</p>
-  <div class="doc-alert red">Ce projet est classifié. Les données de suivi individuelles sont stockées dans VAULT-CR, accès restreint Dr. Vernet uniquement.</div>
+  <p class="doc-p">Cartographie progressive du seuil, sujet après sujet. Chaque cycle repousse légèrement les limites théoriques établies par le cycle précédent.</p>
+  <div class="doc-alert red">Données de suivi individuelles stockées dans VAULT-CR — accès Dr. Vernet uniquement.</div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">ÉTAT D'AVANCEMENT</div>
-  <p class="doc-p">Les modèles théoriques initiaux sous-estimaient significativement la plasticité neurologique humaine sous contrainte prolongée. Les données actuelles indiquent une marge d'intervention supérieure d'environ 40% aux projections initiales.</p>
+  <p class="doc-p">Les modèles théoriques initiaux sous-estimaient la plasticité neurologique humaine sous contrainte prolongée. Les données actuelles indiquent une marge d'intervention supérieure d'environ 40% aux projections initiales.</p>
 </div>
-</div>`
-  },
-  'projets/NCC-P-seconde-chance.md':{
-    title:'NCC-P-seconde-chance.md',
-    path:'NCC-01 / projets',
-    render:()=>`
+</div>`},
+
+'projets/NCC-P-seconde-chance/fiche-projet.md':{title:'fiche-projet.md',path:'NCC-01 / projets / NCC-P-seconde-chance',render:()=>`
 <div class="doc-content">
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Projet</span><span class="doc-val">Programme "Seconde Chance"</span></div>
   <div class="doc-header-row"><span class="doc-label">Sous-titre</span><span class="doc-val">Reconditionnement comportemental</span></div>
   <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-P-SC</span></div>
   <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--text-dim)">Conceptualisation</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">OBJECTIF</div>
-  <p class="doc-p">Développer des méthodes de remodelage cognitif ciblant les individus marginaux ou réfractaires, afin de modifier durablement leur rapport à l'Union. L'objectif n'est pas la punition mais la réintégration fonctionnelle.</p>
+  <p class="doc-p">Développer des méthodes de remodelage cognitif ciblant les individus marginaux ou réfractaires, afin de modifier durablement leur rapport à l'Union. L'objectif est la réintégration fonctionnelle — pas la punition.</p>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">APPROCHES ENVISAGÉES</div>
@@ -902,70 +664,47 @@ const FILES={
 </div>
 <div class="doc-section">
   <div class="doc-section-title">POPULATION CIBLE</div>
-  <p class="doc-p">Individus classés "réfractaires chroniques" par la Protection Civile, non répondants aux dispositifs de surveillance standard. Alternative à l'élimination ou au confinement prolongé.</p>
+  <p class="doc-p">Individus classés "réfractaires chroniques" non répondants aux dispositifs de surveillance standard.</p>
   <div class="doc-alert green">Avantage opérationnel : transformation d'une ressource problématique en ressource utilisable.</div>
 </div>
-</div>`
-  },
-  'projets/NCC-P-xen.md':{
-    title:'NCC-P-xen.md',
-    path:'NCC-01 / projets',
-    render:()=>`
+</div>`},
+
+'projets/NCC-P-xen/fiche-projet.md':{title:'fiche-projet.md',path:'NCC-01 / projets / NCC-P-xen',render:()=>`
 <div class="doc-content">
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Projet</span><span class="doc-val">Étude des organismes de Xen à des fins biologiques</span></div>
   <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">NCC-P-XEN</span></div>
   <div class="doc-header-row"><span class="doc-label">Statut</span><span class="doc-val" style="color:var(--text-dim)">Préliminaire — en attente d'accès aux spécimens</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">CONTEXTE</div>
-  <p class="doc-p">Les organismes de Xen présentent des propriétés biologiques sans équivalent terrestre. Leur capacité de régénération, d'adaptation et de survie dans des environnements hostiles constitue une piste d'exploration directement applicable aux travaux d'augmentation humaine.</p>
+  <p class="doc-p">Les organismes de Xen présentent des propriétés biologiques sans équivalent terrestre. Leur capacité de régénération, d'adaptation et de survie dans des environnements hostiles constitue une piste directement applicable aux travaux d'augmentation humaine.</p>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">AXES D'ÉTUDE</div>
   <ul class="doc-list">
     <li>Analyse des mécanismes de régénération tissulaire xenienne</li>
-    <li>Compatibilité potentielle avec les tissus humains — rejet / intégration</li>
+    <li>Compatibilité potentielle avec les tissus humains</li>
     <li>Propriétés adaptatives applicables à la résistance organique humaine</li>
     <li>Synergies avec les technologies d'augmentation Combine existantes</li>
   </ul>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">VERROUS OPÉRATIONNELS</div>
-  <div class="doc-alert">Accès aux spécimens vivants ou préservés non encore accordé. Demande déposée auprès de la Direction. Étude documentaire en cours sur la base des rapports d'observation disponibles.</div>
+  <div class="doc-alert">Accès aux spécimens non encore accordé. Demande déposée auprès de la Direction. Étude documentaire en cours.</div>
 </div>
-<div class="doc-section">
-  <div class="doc-section-title">NOTE</div>
-  <div class="quote-block">« Ce que Xen représente biologiquement, on ne fait que commencer à en mesurer les implications. Si ses organismes ont survécu à ce qu'ils ont traversé, il y a dans leur architecture quelque chose qu'on aurait tort de ne pas comprendre. »<br/>— Dr. E. Vernet</div>
-</div>
-</div>`
-  },
+<div class="quote-block">« Ce que Xen représente biologiquement, on ne fait que commencer à en mesurer les implications. Si ses organismes ont survécu à ce qu'ils ont traversé, il y a dans leur architecture quelque chose qu'on aurait tort de ne pas comprendre. »<br/>— Dr. E. Vernet</div>
+</div>`},
 };
 
-// ─── TABS ─────────────────────────────────
-let openTabs=[];
-let activeTab=null;
+// ── TABS ──────────────────────────────────────────────────
+let openTabs=[], activeTab=null;
 
-function openFile(path){
+function openFile(path, rowEl){
   if(!FILES[path]) return;
-  // mark active in tree
-  document.querySelectorAll('.tree-file,.tree-root-file').forEach(el=>{
-    el.classList.remove('active');
-    if(el.getAttribute('onclick')&&el.getAttribute('onclick').includes(path)){
-      el.classList.add('active');
-    }
-  });
-  // expand parent dir if needed
-  const parts=path.split('/');
-  if(parts.length>1){
-    const dirId='dir-'+parts[0];
-    const dirEl=document.getElementById(dirId);
-    if(dirEl&&!dirEl.classList.contains('visible')){
-      dirEl.classList.add('visible');
-      const arrow=dirEl.previousElementSibling;
-      if(arrow) arrow.classList.add('open');
-    }
-  }
+  document.querySelectorAll('.tree-item').forEach(el=>el.classList.remove('active'));
+  if(rowEl) rowEl.classList.add('active');
   if(!openTabs.includes(path)) openTabs.push(path);
   setActive(path);
 }
@@ -973,7 +712,7 @@ function openFile(path){
 function setActive(path){
   activeTab=path;
   renderTabs();
-  renderFile(path);
+  document.getElementById('file-content').innerHTML = FILES[path].render();
   renderBreadcrumb(path);
 }
 
@@ -981,265 +720,144 @@ function closeTab(path,e){
   e.stopPropagation();
   const idx=openTabs.indexOf(path);
   openTabs.splice(idx,1);
-  if(activeTab===path){
-    activeTab=openTabs[Math.min(idx,openTabs.length-1)]||null;
-  }
+  if(activeTab===path) activeTab=openTabs[Math.min(idx,openTabs.length-1)]||null;
   renderTabs();
-  if(activeTab) renderFile(activeTab);
+  if(activeTab){ setActive(activeTab); }
   else{
-    document.getElementById('file-content').innerHTML='<div id="welcome"><pre>\n  ╔══════════════════════════════════════════════╗\n  ║    ADMINISTRATION CIVILE — CITÉ 13 / D10     ║\n  ║         SYSTÈME DE GESTION NCC-01            ║\n  ╚══════════════════════════════════════════════╝</pre><p>Sélectionnez un fichier dans l\'explorateur.</p></div>';
+    document.getElementById('file-content').innerHTML='<div id="welcome"><pre>\n  ╔══════════════════════════════════════════════════╗\n  ║    ADMINISTRATION CIVILE — CITÉ 13 / DISTRICT 08 ║\n  ║    SYSTÈME DE GESTION NCC-01                     ║\n  ╚══════════════════════════════════════════════════╝</pre><p style="font-size:11px">Sélectionnez un fichier dans l\'explorateur.</p></div>';
     document.getElementById('breadcrumb').innerHTML='<span class="crumb">NCC-01</span>';
   }
-  renderBreadcrumb(activeTab);
 }
 
 function renderTabs(){
-  const tabsEl=document.getElementById('tabs');
-  const empty=document.getElementById('tabs-empty');
-  if(openTabs.length===0){
-    tabsEl.innerHTML='<div id="tabs-empty">Aucun fichier ouvert — sélectionnez un fichier dans l\'explorateur</div>';
-    return;
-  }
-  tabsEl.innerHTML='';
+  const el=document.getElementById('tabs');
+  if(!openTabs.length){el.innerHTML='<div id="tabs-empty">Sélectionnez un fichier dans l\'explorateur</div>';return;}
+  el.innerHTML='';
   openTabs.forEach(p=>{
-    const f=FILES[p];
-    const div=document.createElement('div');
-    div.className='tab'+(p===activeTab?' active':'');
-    div.onclick=()=>setActive(p);
-    div.innerHTML=`<span>${f.title}</span><span class="tab-close" onclick="closeTab('${p}',event)">✕</span>`;
-    tabsEl.appendChild(div);
+    const d=document.createElement('div');
+    d.className='tab'+(p===activeTab?' active':'');
+    d.onclick=()=>setActive(p);
+    d.innerHTML=`<span>${FILES[p].title}</span><span class="tab-close" onclick="closeTab('${p}',event)">✕</span>`;
+    el.appendChild(d);
   });
-}
-
-function renderFile(path){
-  const f=FILES[path];
-  if(!f) return;
-  document.getElementById('file-content').innerHTML=f.render();
 }
 
 function renderBreadcrumb(path){
   const el=document.getElementById('breadcrumb');
-  if(!path){el.innerHTML='<span class="crumb">NCC-01</span>';return;}
-  const parts=['NCC-01',...path.split('/')];
-  el.innerHTML=parts.map((p,i)=>{
-    const isLast=i===parts.length-1;
-    return (i>0?'<span class="crumb-sep"> / </span>':'')+
-      `<span class="crumb ${isLast?'last':''}">${p}</span>`;
+  if(!path||!FILES[path]){el.innerHTML='<span class="crumb">NCC-01</span>';return;}
+  const parts = FILES[path].path.split(' / ');
+  el.innerHTML = parts.map((p,i)=>{
+    const last=i===parts.length-1;
+    return (i>0?'<span class="crumb-sep"> / </span>':'')+`<span class="crumb ${last?'last':''}">${p}</span>`;
   }).join('');
 }
 
-// ─── DIR TOGGLE ───────────────────────────
-function toggleDir(el,id){
-  el.classList.toggle('open');
-  document.getElementById(id).classList.toggle('visible');
+// ── BOOT + LOGIN ──────────────────────────────────────────
+const PASSWORD='NCC-01';
+let attemptsLeft=3, locked=false;
+const bootLines=document.getElementById('boot-lines');
+const bar=document.getElementById('boot-bar-fill');
+const barLabel=document.getElementById('boot-bar-label');
+
+function bl(text,cls='bl-dim',delay=0){
+  return new Promise(r=>{setTimeout(()=>{
+    const s=document.createElement('span');
+    s.className='bl '+cls;s.textContent=text;
+    bootLines.appendChild(s);bootLines.scrollTop=bootLines.scrollHeight;r();
+  },delay);});
 }
-
-// ─── TERMINAL ─────────────────────────────
-const termOut=document.getElementById('term-output');
-const termInput=document.getElementById('term-input');
-
-function tprint(text,cls='dim'){
-  const d=document.createElement('div');
-  d.className='tline '+cls;
-  d.textContent=text;
-  termOut.appendChild(d);
-  termOut.scrollTop=termOut.scrollHeight;
-}
-
-tprint('Système NCC-01 initialisé — District 10 / Le Terminal','ok');
-tprint('Tapez  help  pour la liste des commandes disponibles.','dim');
-
-termInput.addEventListener('keydown',e=>{
-  if(e.key!=='Enter') return;
-  const val=termInput.value.trim();
-  termInput.value='';
-  if(!val) return;
-  tprint('> '+val,'hi');
-  handleTermCmd(val);
-});
-
-document.getElementById('terminal-pane').addEventListener('click',()=>termInput.focus());
-
-const CMDS={
-  help(){
-    tprint('','dim');
-    tprint('ls              lister les fichiers','dim');
-    tprint('open [fichier]  ouvrir un fichier dans le viewer','dim');
-    tprint('cat [fichier]   afficher contenu brut','dim');
-    tprint('whoami          informations de session','dim');
-    tprint('clear           effacer le terminal','dim');
-    tprint('','dim');
-  },
-  ls(){
-    tprint('','dim');
-    tprint('[FILE] README.md','hi');
-    tprint('[FILE] ACCES.md','hi');
-    tprint('[FILE] VERNET.md','hi');
-    tprint('[DIR]  rapports/','warn');
-    tprint('[DIR]  protocoles/','warn');
-    tprint('[DIR]  sujets/','warn');
-    tprint('[DIR]  projets/','warn');
-    tprint('','dim');
-  },
-  whoami(){
-    tprint('','dim');
-    tprint('Utilisateur   : Dr. E. Vernet','hi');
-    tprint('Accréditation : Niveau 4','ok');
-    tprint('Session       : journalisée — Protection Civile District 10','warn');
-    tprint('','dim');
-  },
-  clear(){termOut.innerHTML='';},
-};
-
-function handleTermCmd(raw){
-  const parts=raw.split(/\s+/);
-  const cmd=parts[0].toLowerCase();
-  const arg=parts[1]||'';
-  if(CMDS[cmd]){CMDS[cmd](arg);return;}
-  if(cmd==='open'||cmd==='cat'){
-    if(!arg){tprint('Usage : '+cmd+' [fichier]','err');return;}
-    const key=Object.keys(FILES).find(k=>k===arg||k.endsWith('/'+arg));
-    if(key){
-      if(cmd==='open') openFile(key);
-      else{tprint('','dim');tprint('[Contenu affiché dans le viewer — tapez open '+arg+']','dim');tprint('','dim');if(cmd==='open') openFile(key);}
-      tprint('Fichier ouvert : '+key,'ok');
-    } else {
-      tprint('Fichier introuvable : '+arg,'err');
-    }
-    return;
-  }
-  tprint('Commande inconnue : '+cmd,'err');
-}
-
-// click terminal area
-document.getElementById('file-content').addEventListener('click',()=>{});
-
-// ═══════════════════════════════════════════════════════════
-// BOOT SEQUENCE + LOGIN
-// ═══════════════════════════════════════════════════════════
-const PASSWORD = 'NCC-01';
-let attemptsLeft = 3;
-let locked = false;
-
-const bootLines = document.getElementById('boot-lines');
-const bar = document.getElementById('boot-bar-fill');
-const barLabel = document.getElementById('boot-bar-label');
-
-function bl(text, cls='bl-dim', delay=0){
-  return new Promise(r=>{
-    setTimeout(()=>{
-      const s = document.createElement('span');
-      s.className = 'bl ' + cls;
-      s.textContent = text;
-      bootLines.appendChild(s);
-      bootLines.scrollTop = bootLines.scrollHeight;
-      r();
-    }, delay);
-  });
-}
-
-function setBar(pct, label){
-  bar.style.width = pct + '%';
-  if(label) barLabel.textContent = label;
-}
+function setBar(p,l){bar.style.width=p+'%';if(l)barLabel.textContent=l;}
 
 async function runBoot(){
-  await bl('', 'bl-dim', 150);
-  await bl('AC-BIOS v4.7.2  //  Administration Civile — Réseau Interne', 'bl-dim', 0);
-  await bl('Copyright 2014 Union Combine. Tous droits réservés.', 'bl-dim', 60);
-  await bl('', 'bl-dim', 40);
-  setBar(5, 'VÉRIFICATION MATÉRIELLE...');
-  await bl('Processeur ................ [2x COMBINE-RISC 3.4GHz]     OK', 'bl-dim', 80);
-  await bl('Mémoire vive .............. [16384 MB]                    OK', 'bl-dim', 60);
-  await bl('Stockage sécurisé ......... [VAULT-AES256]                OK', 'bl-dim', 60);
-  await bl('Interface réseau .......... [INTRANET-AC / CHIFFRÉ]       OK', 'bl-dim', 60);
-  setBar(18, 'CHARGEMENT DU NOYAU...');
-  await bl('', 'bl-dim', 40);
-  await bl('Chargement noyau AC-KERNEL 7.1 ...', 'bl-hi', 40);
-  await bl('  [██░░░░░░░░░░░░░░░░░░]  10%', 'bl-dim', 90);
-  await bl('  [████░░░░░░░░░░░░░░░░]  22%', 'bl-dim', 110);
-  await bl('  [████████░░░░░░░░░░░░]  42%', 'bl-dim', 130);
-  await bl('  [████████████░░░░░░░░]  61%', 'bl-dim', 140);
-  await bl('  [████████████████░░░░]  80%', 'bl-dim', 140);
-  await bl('  [████████████████████] 100%   OK', 'bl-bright', 150);
-  setBar(40, 'MONTAGE DES MODULES...');
-  await bl('', 'bl-dim', 40);
-  await bl('MODULE neurochim-core .......... chargé', 'bl-dim', 60);
-  await bl('MODULE vault-access ............ chargé', 'bl-dim', 55);
-  await bl('MODULE session-log ............. chargé', 'bl-dim', 55);
-  await bl('MODULE pc-liaison .............. chargé', 'bl-dim', 55);
-  await bl('MODULE classif-renderer ........ chargé', 'bl-dim', 55);
-  setBar(60, 'CONNEXION AU RÉSEAU...');
-  await bl('', 'bl-dim', 40);
-  await bl('Liaison INTRANET-AC ............ [ÉTABLIE]', 'bl-dim', 80);
-  await bl('Noeud : CITÉ-13/DISTRICT-10/LAB-SOUTERRAIN', 'bl-dim', 55);
-  await bl('Chiffrement AES-256-CTX ........ [ACTIF]', 'bl-dim', 55);
-  await bl('Journalisation session ......... [ACTIVE]', 'bl-warn', 55);
-  setBar(80, 'VÉRIFICATION DE L\'INTÉGRITÉ...');
-  await bl('', 'bl-dim', 50);
-  await bl('Vérification intégrité fichiers NCC-01 ...', 'bl-hi', 60);
-  await bl('  README.md ................... [INTÈGRE]', 'bl-dim', 50);
-  await bl('  rapports/ ................... [INTÈGRE]', 'bl-dim', 50);
-  await bl('  protocoles/ ................. [INTÈGRE]', 'bl-dim', 50);
-  await bl('  sujets/ ..................... [INTÈGRE — CHIFFRÉ]', 'bl-dim', 50);
-  await bl('  projets/ .................... [INTÈGRE]', 'bl-dim', 50);
-  setBar(100, 'EN ATTENTE D\'AUTHENTIFICATION');
-  await bl('', 'bl-dim', 40);
-  await bl('Système prêt. Authentification requise.', 'bl-bright', 80);
-  await bl('', 'bl-dim', 40);
-
-  document.getElementById('login-panel').style.display = 'block';
+  await bl('',     'bl-dim', 150);
+  await bl('AC-BIOS v4.7.2  //  Administration Civile — Réseau Interne','bl-dim',0);
+  await bl('Copyright 2014 Union Combine. Tous droits réservés.','bl-dim',60);
+  await bl('','bl-dim',40);
+  setBar(5,'VÉRIFICATION MATÉRIELLE...');
+  await bl('Processeur ................ [2x COMBINE-RISC 3.4GHz]     OK','bl-dim',80);
+  await bl('Mémoire vive .............. [16384 MB]                    OK','bl-dim',60);
+  await bl('Stockage sécurisé ......... [VAULT-AES256]                OK','bl-dim',60);
+  await bl('Interface réseau .......... [INTRANET-AC / CHIFFRÉ]       OK','bl-dim',60);
+  setBar(18,'CHARGEMENT DU NOYAU...');
+  await bl('','bl-dim',40);
+  await bl('Chargement noyau AC-KERNEL 7.1 ...','bl-hi',40);
+  await bl('  [██░░░░░░░░░░░░░░░░░░]  10%','bl-dim',90);
+  await bl('  [████░░░░░░░░░░░░░░░░]  22%','bl-dim',110);
+  await bl('  [████████░░░░░░░░░░░░]  42%','bl-dim',130);
+  await bl('  [████████████░░░░░░░░]  61%','bl-dim',140);
+  await bl('  [████████████████░░░░]  80%','bl-dim',140);
+  await bl('  [████████████████████] 100%   OK','bl-bright',150);
+  setBar(40,'MONTAGE DES MODULES...');
+  await bl('','bl-dim',40);
+  await bl('MODULE neurochim-core .......... chargé','bl-dim',60);
+  await bl('MODULE vault-access ............ chargé','bl-dim',55);
+  await bl('MODULE session-log ............. chargé','bl-dim',55);
+  await bl('MODULE unisca-liaison .......... chargé','bl-dim',55);
+  await bl('MODULE classif-renderer ........ chargé','bl-dim',55);
+  setBar(60,'CONNEXION AU RÉSEAU...');
+  await bl('','bl-dim',40);
+  await bl('Liaison INTRANET-AC ............ [ÉTABLIE]','bl-dim',80);
+  await bl('Noeud : CITÉ-13/DISTRICT-08/UNISCA/RECHERCHE','bl-dim',55);
+  await bl('Chiffrement AES-256-CTX ........ [ACTIF]','bl-dim',55);
+  await bl('Journalisation session ......... [ACTIVE]','bl-warn',55);
+  setBar(80,'VÉRIFICATION DE L\'INTÉGRITÉ...');
+  await bl('','bl-dim',50);
+  await bl('Vérification intégrité fichiers NCC-01 ...','bl-hi',60);
+  await bl('  README.md ................... [INTÈGRE]','bl-dim',45);
+  await bl('  VERNET.md ................... [INTÈGRE]','bl-dim',45);
+  await bl('  projets/NCC-P-neurochem/ .... [INTÈGRE]','bl-dim',45);
+  await bl('  projets/NCC-P-conscience/ ... [INTÈGRE — CHIFFRÉ]','bl-dim',45);
+  await bl('  projets/NCC-P-xen/ .......... [INTÈGRE]','bl-dim',45);
+  setBar(100,'EN ATTENTE D\'AUTHENTIFICATION');
+  await bl('','bl-dim',40);
+  await bl('Système prêt. Authentification requise.','bl-bright',80);
+  await bl('','bl-dim',40);
+  document.getElementById('login-panel').style.display='block';
   setTimeout(()=>{
-    const p = document.getElementById('login-pass');
+    const p=document.getElementById('login-pass');
     p.focus();
-    p.addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
-  }, 100);
+    p.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+  },100);
 }
 
 function tryLogin(){
-  if(locked) return;
-  const pass = document.getElementById('login-pass').value;
-  const errEl = document.getElementById('login-error');
-
-  if(pass === PASSWORD){
-    errEl.textContent = '';
-    document.getElementById('login-box').style.borderColor = '#3ddc84';
-    bl('', 'bl-dim', 0);
-    bl('Authentification réussie. Ouverture de session...', 'bl-bright', 0);
+  if(locked)return;
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  if(pass===PASSWORD){
+    errEl.textContent='';
+    document.getElementById('login-box').style.borderColor='#3ddc84';
+    bl('','bl-dim',0);
+    bl('Authentification réussie. Ouverture de session...','bl-bright',0);
     setTimeout(()=>{
       document.getElementById('boot-overlay').classList.add('boot-exiting');
       document.getElementById('topbar').classList.add('visible');
       document.getElementById('layout').classList.add('visible');
-      setTimeout(()=>{
-        document.getElementById('boot-overlay').remove();
-        document.getElementById('term-input').focus();
-      }, 700);
-    }, 600);
+      setTimeout(()=>document.getElementById('boot-overlay').remove(),700);
+    },600);
   } else {
     attemptsLeft--;
-    document.getElementById('attempts-left').textContent = attemptsLeft;
-    document.getElementById('login-pass').value = '';
-    if(attemptsLeft <= 0){
-      locked = true;
-      errEl.textContent = '';
-      document.getElementById('login-submit').disabled = true;
-      document.getElementById('login-submit').style.opacity = '0.3';
-      document.getElementById('login-pass').disabled = true;
-      document.getElementById('login-attempts').style.display = 'none';
-      document.getElementById('lockout-msg').style.display = 'block';
-      bl('', 'bl-dim', 0);
-      bl('ALERTE : 3 tentatives infructueuses — session verrouillée.', 'bl-err', 0);
-      bl('Incident transmis à la Protection Civile du District 10.', 'bl-err', 200);
+    document.getElementById('attempts-left').textContent=attemptsLeft;
+    document.getElementById('login-pass').value='';
+    if(attemptsLeft<=0){
+      locked=true;
+      errEl.textContent='';
+      document.getElementById('login-submit').disabled=true;
+      document.getElementById('login-submit').style.opacity='0.3';
+      document.getElementById('login-pass').disabled=true;
+      document.getElementById('login-attempts').style.display='none';
+      document.getElementById('lockout-msg').style.display='block';
+      bl('','bl-dim',0);
+      bl('ALERTE : 3 tentatives infructueuses — session verrouillée.','bl-err',0);
+      bl('Incident transmis à la Protection Civile du District 08.','bl-err',200);
     } else {
-      errEl.textContent = '⚠ Mot de passe incorrect.';
-      errEl.style.animation = 'none';
-      void errEl.offsetWidth;
-      errEl.style.animation = 'shake .3s ease';
+      errEl.textContent='⚠ Mot de passe incorrect.';
+      errEl.style.animation='none';void errEl.offsetWidth;errEl.style.animation='shake .3s ease';
     }
   }
 }
 
-window.addEventListener('load', ()=> runBoot());
+window.addEventListener('load',()=>runBoot());
 </script>
 </body>
 </html>
