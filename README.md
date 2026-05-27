@@ -1,6 +1,6 @@
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║          ADMINISTRATION CIVILE — CITÉ 13 / DISTRICT 10          ║
+║          ADMINISTRATION CIVILE — CITÉ 13 / DISTRICT 08          ║
 ║                   ACCÈS STRICTEMENT RESTREINT                   ║
 ║              NIVEAU DE CLASSIFICATION : CONFIDENTIEL            ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -10,7 +10,7 @@
 
 > **Référence :** NCC-01  
 > **Responsable :** Dr. E. Vernet — Chercheur Civil Agréé, Niveau 4  
-> **Localisation :** Laboratoire Souterrain Sectoriel — District 10, Le Terminal  
+> **Localisation :** Laboratoire Souterrain Sectoriel — District 08 / UNISCA — Section Recherche  
 > **État :** `Phase 1 — En cours`  
 > **Dernière MàJ :** 14.03.2014  
 
@@ -46,7 +46,7 @@ et sera traité en conséquence.
 
 ```
 [ DOCUMENT CONFIDENTIEL — NE PAS DIFFUSER ]
-[ Session journalisée — Protection Civile District 10 ]
+[ Session journalisée — Protection Civile District 08 ]
 ```
 
 ---
