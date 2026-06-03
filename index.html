@@ -223,7 +223,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div class="meta-row"><span>Système</span><span class="meta-val">VERNET-DB</span></div>
       <div class="meta-row"><span>Unité</span><span class="meta-val">UNISCA / D08</span></div>
       <div class="meta-row"><span>Projets</span><span class="meta-val">5 enregistrés</span></div>
-      <div class="meta-row"><span>MàJ</span><span class="meta-val">24.03.2014</span></div>
+      <div class="meta-row"><span>MàJ</span><span class="meta-val">14.03.2014</span></div>
     </div>
   </div>
 
@@ -260,7 +260,7 @@ const sessionUser = urlParams.get('user') || urlParams.get('pseudo') || 'vernet'
 // Appliqué après le DOM — voir window.onload
 
 // ── VAULT (projets verrouillés) ───────────────────────────
-const VAULT_PASSWORD = 'VAULT-7';
+const VAULT_PASSWORD_HASH = 'efc7b46b7189469ddd75eae43d77865c53328818d512658e7c27ad4f30e36d99';
 const unlockedVaults = new Set(); // projets déverrouillés pour cette session
 let vaultPendingFile = null;
 let vaultPendingRow  = null;
@@ -280,11 +280,13 @@ function vaultOpen(project, fileKey, rowEl){
   setTimeout(()=>document.getElementById('vault-input').focus(), 100);
 }
 
-function vaultSubmit(){
+async function vaultSubmit(){
   const val = document.getElementById('vault-input').value;
   const errEl = document.getElementById('vault-error');
   const project = document.getElementById('vault-ref').dataset.project;
-  if(val === VAULT_PASSWORD){
+  const hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(val));
+  const hx=Array.from(new Uint8Array(hb)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hx===VAULT_PASSWORD_HASH){
     unlockedVaults.add(project);
     document.getElementById('vault-overlay').classList.remove('open');
     openFileDirectly(vaultPendingFile, vaultPendingRow);
@@ -386,7 +388,7 @@ const FILES={
 <div class="doc-header">
   <div class="doc-header-row"><span class="doc-label">Système</span><span class="doc-val">VERNET-DB, Base de données personnelle</span></div>
   <div class="doc-header-row"><span class="doc-label">Propriétaire</span><span class="doc-val">Dr. E. Vernet, UNISCA / Section Recherche / District 08</span></div>
-  <div class="doc-header-row"><span class="doc-label">Dernière MàJ</span><span class="doc-val">24.03.2014</span></div>
+  <div class="doc-header-row"><span class="doc-label">Dernière MàJ</span><span class="doc-val">14.03.2014</span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">PRÉSENTATION</div>
@@ -417,7 +419,7 @@ const FILES={
   <div class="doc-section-title">ACCÈS AUTORISÉS</div>
   <ul class="doc-list">
     <li class="ok">Dr. E. Vernet, propriétaire, accès total</li>
-    <li>Direction de l'UNISCA, lecture seule</li>
+    <li>Directeur UNISCA, lecture seule</li>
   </ul>
 </div>
 <div class="doc-section">
@@ -435,7 +437,7 @@ const FILES={
   <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
   <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA, Section Recherche / District 08</span></div>
   <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Proposition, en attente de validation</span></div>
-  <div class="doc-header-row"><span class="doc-label">Date de dépôt</span><span class="doc-val">29.05.2014</span></div>
+  <div class="doc-header-row"><span class="doc-label">Date de dépôt</span><span class="doc-val">07.03.2014</span></div>
 </div>
 <div class="doc-section">
   <div class="doc-section-title">OBJECTIF</div>
@@ -640,7 +642,7 @@ const FILES={
 </div>
 <div class="doc-section">
   <div class="doc-section-title">NOTE DU RESPONSABLE</div>
-  <div class="quote-block">« Ce que je propose ici n'est pas un outil de répression. C'est un outil de prévention. Nous n'attendons pas que le problème se manifeste pour y répondre nous agissons en amont, avant qu'il n'existe. Un citoyen qu'on n'a pas besoin de contraindre est un citoyen qu'on a su stabiliser à temps. »<br/> Dr. E. Vernet</div>
+  <div class="quote-block">« Ce que je propose ici n'est pas un outil de répression. C'est un outil de prévention. Les dispositifs actuels réagissent. Ce projet agit en amont. La nuance mérite d'être portée à l'attention de la Direction. »<br/> Dr. E. Vernet</div>
 </div>
 </div>`},
 
@@ -865,7 +867,7 @@ function renderBreadcrumb(path){
 }
 
 // ── BOOT + LOGIN ──────────────────────────────────────────
-const PASSWORD='NCC-01';
+const PASSWORD_HASH='09d4072cf20fcfcf2e8fef4f3b2f9c5a58fd50821dddb31d88ede45a3cc5e1e2';
 let attemptsLeft=3,locked=false;
 const bootLines=document.getElementById('boot-lines');
 const bar=document.getElementById('boot-bar-fill');
@@ -932,11 +934,13 @@ async function runBoot(){
   },100);
 }
 
-function tryLogin(){
+async function tryLogin(){
   if(locked)return;
   const pass=document.getElementById('login-pass').value;
   const errEl=document.getElementById('login-error');
-  if(pass===PASSWORD){
+  const hbuf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pass));
+  const hhex=Array.from(new Uint8Array(hbuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hhex===PASSWORD_HASH){
     errEl.textContent='';
     document.getElementById('login-box').style.borderColor='#3ddc84';
     bl('','bl-dim',0);
