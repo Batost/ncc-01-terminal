@@ -222,7 +222,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <div id="sidebar-footer">
       <div class="meta-row"><span>Système</span><span class="meta-val">VERNET-DB</span></div>
       <div class="meta-row"><span>Unité</span><span class="meta-val">UNISCA / D08</span></div>
-      <div class="meta-row"><span>Projets</span><span class="meta-val">5 enregistrés</span></div>
+      <div class="meta-row"><span>Projets</span><span class="meta-val">6 enregistrés</span></div>
       <div class="meta-row"><span>MàJ</span><span class="meta-val">14.03.2014</span></div>
     </div>
   </div>
@@ -260,18 +260,29 @@ const sessionUser = urlParams.get('user') || urlParams.get('pseudo') || 'vernet'
 // Appliqué après le DOM — voir window.onload
 
 // ── VAULT (projets verrouillés) ───────────────────────────
+const FACTUM_HASH = 'a5e83d16bf9a223a293ea7e737e07b28672be2129b9659f421d4e5839d7c641f';
 const VAULT_PASSWORD_HASH = 'efc7b46b7189469ddd75eae43d77865c53328818d512658e7c27ad4f30e36d99';
 const unlockedVaults = new Set(); // projets déverrouillés pour cette session
 let vaultPendingFile = null;
 let vaultPendingRow  = null;
+let vaultPendingDirId = null;
+let vaultPendingChildWrap = null;
 
-function vaultOpen(project, fileKey, rowEl){
+function vaultOpen(project, fileKey, rowEl, dirId, childWrap){
   if(unlockedVaults.has(project)){
-    openFileDirectly(fileKey, rowEl);
+    if(fileKey) openFileDirectly(fileKey, rowEl);
+    else if(dirId){
+      const cw=childWrap||document.getElementById('ch-'+dirId);
+      if(cw) cw.classList.add('open');
+      const arr=document.getElementById('arr-'+dirId);
+      if(arr) arr.classList.add('open');
+    }
     return;
   }
   vaultPendingFile = fileKey;
   vaultPendingRow  = rowEl;
+  vaultPendingDirId = dirId||null;
+  vaultPendingChildWrap = childWrap||null;
   document.getElementById('vault-ref').textContent = 'Projet : ' + project;
   document.getElementById('vault-ref').dataset.project = project;
   document.getElementById('vault-input').value = '';
@@ -286,11 +297,19 @@ async function vaultSubmit(){
   const project = document.getElementById('vault-ref').dataset.project;
   const hb=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(val));
   const hx=Array.from(new Uint8Array(hb)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  if(hx===VAULT_PASSWORD_HASH){
+  const expectedHash = project==='FACTUM' ? FACTUM_HASH : VAULT_PASSWORD_HASH;
+  if(hx===expectedHash){
     unlockedVaults.add(project);
     document.getElementById('vault-overlay').classList.remove('open');
-    openFileDirectly(vaultPendingFile, vaultPendingRow);
-    vaultPendingFile = null; vaultPendingRow = null;
+    if(vaultPendingFile){
+      openFileDirectly(vaultPendingFile, vaultPendingRow);
+    } else if(vaultPendingDirId){
+      const cw=vaultPendingChildWrap||document.getElementById('ch-'+vaultPendingDirId);
+      if(cw) cw.classList.add('open');
+      const arr=document.getElementById('arr-'+vaultPendingDirId);
+      if(arr) arr.classList.add('open');
+    }
+    vaultPendingFile=null; vaultPendingRow=null; vaultPendingDirId=null; vaultPendingChildWrap=null;
   } else {
     errEl.textContent = '⚠ Clé incorrecte.';
     errEl.style.animation='none';void errEl.offsetWidth;errEl.style.animation='shake .3s ease';
@@ -325,17 +344,32 @@ const TREE=[
 
   // Projets verrouillés
   {id:'d-aug', label:'NCC-AUG/', icon:'▣', iconColor:'var(--amber)', type:'dir', locked:'NCC-AUG', children:[
-    {id:'f-aug', label:'fiche-projet.md', icon:'◆', type:'file', locked:'NCC-AUG', fileKey:'NCC-AUG/fiche-projet.md'},
+    {id:'f-aug', label:'fiche-projet.md', icon:'◆', type:'file', fileKey:'NCC-AUG/fiche-projet.md'},
   ]},
   {id:'d-cr', label:'NCC-CR/', icon:'▣', iconColor:'var(--red)', type:'dir', locked:'NCC-CR', children:[
-    {id:'f-cr', label:'fiche-projet.md', icon:'◆', iconColor:'var(--red)', type:'file', locked:'NCC-CR', fileKey:'NCC-CR/fiche-projet.md'},
+    {id:'f-cr', label:'fiche-projet.md', icon:'◆', iconColor:'var(--red)', type:'file', fileKey:'NCC-CR/fiche-projet.md'},
   ]},
   {id:'d-sc', label:'NCC-SC/', icon:'▣', iconColor:'var(--amber)', type:'dir', locked:'NCC-SC', children:[
-    {id:'f-sc', label:'fiche-projet.md', icon:'◆', type:'file', locked:'NCC-SC', fileKey:'NCC-SC/fiche-projet.md'},
+    {id:'f-sc', label:'fiche-projet.md', icon:'◆', type:'file', fileKey:'NCC-SC/fiche-projet.md'},
   ]},
   {id:'d-xen', label:'NCC-XEN/', icon:'▣', iconColor:'var(--amber)', type:'dir', locked:'NCC-XEN', children:[
-    {id:'f-xen', label:'fiche-projet.md', icon:'◆', type:'file', locked:'NCC-XEN', fileKey:'NCC-XEN/fiche-projet.md'},
+    {id:'f-xen', label:'fiche-projet.md', icon:'◆', type:'file', fileKey:'NCC-XEN/fiche-projet.md'},
   ]},
+
+  // ── PROJET FACTUM ──
+  {id:'d-factum', label:'FACTUM/', icon:'▣', iconColor:'var(--red)', type:'dir', locked:'FACTUM', children:[
+    {id:'f-factum-fiche',  label:'fiche-projet.md',        icon:'◆', iconColor:'var(--red)', type:'file', fileKey:'FACTUM/fiche-projet.md'},
+    {id:'f-factum-cdc',    label:'cahier-des-charges.md',  icon:'◆', type:'file', fileKey:'FACTUM/cahier-des-charges.md'},
+    {id:'f-factum-proto',  label:'protocole-recherche.md', icon:'◆', type:'file', fileKey:'FACTUM/protocole-recherche.md'},
+    {id:'d-factum-comp',   label:'composants/', icon:'▣', iconColor:'var(--amber)', type:'dir', children:[
+      {id:'f-factum-synth', label:'fiche-synthese.md', icon:'◆', type:'file', fileKey:'FACTUM/composants/fiche-synthese.md'},
+    ]},
+    {id:'d-factum-ni7', label:'NI-7/', icon:'▣', iconColor:'var(--red)', type:'dir', children:[
+      {id:'f-ni7-imp',   label:'implant.md',              icon:'◆', iconColor:'var(--red)', type:'file', fileKey:'FACTUM/NI-7/implant.md'},
+      {id:'f-ni7-op',    label:'protocole-operatoire.md', icon:'◆', type:'file', fileKey:'FACTUM/NI-7/protocole-operatoire.md'},
+      {id:'f-ni7-equip', label:'equipement.md',           icon:'◆', type:'file', fileKey:'FACTUM/NI-7/equipement.md'},
+    ]},
+  ]}
 ];
 
 function renderTree(nodes, depth, container){
@@ -357,22 +391,30 @@ function renderTree(nodes, depth, container){
     if(node.type==='dir'){
       const cw=document.createElement('div');
       cw.className='tree-children';cw.id='ch-'+node.id;
-      row.onclick=()=>{
-        const open=cw.classList.toggle('open');
-        const arr=document.getElementById('arr-'+node.id);
-        if(arr) arr.classList.toggle('open',open);
-      };
+      if(node.locked){
+        // Dossier verrouillé : demande mdp au 1er clic, puis bascule normalement
+        row.onclick=()=>{
+          if(unlockedVaults.has(node.locked)){
+            const open=cw.classList.toggle('open');
+            const arr=document.getElementById('arr-'+node.id);
+            if(arr) arr.classList.toggle('open',open);
+          } else {
+            vaultOpen(node.locked, null, null, node.id, cw);
+          }
+        };
+      } else {
+        row.onclick=()=>{
+          const open=cw.classList.toggle('open');
+          const arr=document.getElementById('arr-'+node.id);
+          if(arr) arr.classList.toggle('open',open);
+        };
+      }
       container.appendChild(row);
       renderTree(node.children||[],depth+1,cw);
       container.appendChild(cw);
     } else {
-      row.onclick=()=>{
-        if(node.locked && !unlockedVaults.has(node.locked)){
-          vaultOpen(node.locked, node.fileKey, row);
-        } else {
-          openFileDirectly(node.fileKey, row);
-        }
-      };
+      // Fichier : toujours ouvrir directement (accès garanti par le dossier parent)
+      row.onclick=()=>openFileDirectly(node.fileKey, row);
       container.appendChild(row);
     }
   });
@@ -404,6 +446,7 @@ const FILES={
     <tr><td>NCC-CR</td><td>Expérimentation conscience résiduelle</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
     <tr><td>NCC-SC</td><td>Programme "Seconde Chance"</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
     <tr><td>NCC-XEN</td><td>Étude des organismes de Xen</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
+    <tr><td style="color:var(--red)">FACTUM</td><td>Reconditionnement neurologique individuel</td><td style="color:var(--amber)">CDC en rédaction</td><td style="color:var(--red)">Verrouillé</td></tr>
   </table>
 </div>
 </div>`},
@@ -479,31 +522,31 @@ const FILES={
     <path d="M 108,250 C 155,241 212,239 262,243" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.5"/>
 
     <!-- ZONE 1 : Cortex préfrontal ventromédian (cortical, solid) -->
-    <ellipse cx="88" cy="216" rx="37" ry="22" fill="#e8a02025" stroke="#e8a020" stroke-width="1.8"/>
-    <text x="88" y="220" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.9">vmPFC</text>
+    <ellipse cx="75" cy="216" rx="36" ry="21" fill="#e8a02025" stroke="#e8a020" stroke-width="1.8"/>
+    <text x="75" y="220" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.9">vmPFC</text>
     <!-- line to label -->
-    <polyline points="65,200 38,172 14,172" fill="none" stroke="#e8a020" stroke-width="1" opacity="0.8"/>
-    <circle cx="65" cy="200" r="2" fill="#e8a020"/>
-    <text x="13" y="162" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">Cx. préfrontal</text>
-    <text x="13" y="175" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">ventromédian</text>
+    <polyline points="55,200 34,170 12,170" fill="none" stroke="#e8a020" stroke-width="1" opacity="0.8"/>
+    <circle cx="55" cy="200" r="2" fill="#e8a020"/>
+    <text x="11" y="158" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">Cx. préfrontal</text>
+    <text x="11" y="171" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">ventromédian</text>
 
     <!-- ZONE 2 : Amygdale (deep, dashed) -->
-    <ellipse cx="218" cy="246" rx="29" ry="17" fill="#e0505022" stroke="#e05050" stroke-width="1.8" stroke-dasharray="4,2"/>
-    <text x="218" y="250" fill="#e05050" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">AMY</text>
+    <ellipse cx="220" cy="248" rx="29" ry="17" fill="#e0505022" stroke="#e05050" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="220" y="252" fill="#e05050" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">AMY</text>
     <!-- line to label -->
-    <polyline points="238,258 270,285 345,285" fill="none" stroke="#e05050" stroke-width="1" opacity="0.8"/>
-    <circle cx="238" cy="258" r="2" fill="#e05050"/>
-    <text x="348" y="282" fill="#e05050" font-size="10" font-family="Share Tech Mono,monospace">Amygdale</text>
-    <text x="348" y="294" fill="#e05050" font-size="9" font-family="Share Tech Mono,monospace" opacity="0.6">(profonde)</text>
+    <polyline points="240,260 272,287 346,287" fill="none" stroke="#e05050" stroke-width="1" opacity="0.8"/>
+    <circle cx="240" cy="260" r="2" fill="#e05050"/>
+    <text x="349" y="284" fill="#e05050" font-size="10" font-family="Share Tech Mono,monospace">Amygdale</text>
+    <text x="349" y="296" fill="#e05050" font-size="9" font-family="Share Tech Mono,monospace" opacity="0.6">(profonde)</text>
 
-    <!-- ZONE 3 : Noyau accumbens (deep, dashed) -->
-    <ellipse cx="150" cy="214" rx="24" ry="14" fill="#3ddc8422" stroke="#3ddc84" stroke-width="1.8" stroke-dasharray="4,2"/>
-    <text x="150" y="218" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">NAc</text>
+    <!-- ZONE 3 : Noyau accumbens (deep, dashed) — écarté de vmPFC -->
+    <ellipse cx="172" cy="213" rx="24" ry="14" fill="#3ddc8422" stroke="#3ddc84" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="172" y="217" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">NAc</text>
     <!-- line to label -->
-    <polyline points="138,227 118,285 50,285" fill="none" stroke="#3ddc84" stroke-width="1" opacity="0.8"/>
-    <circle cx="138" cy="227" r="2" fill="#3ddc84"/>
-    <text x="48" y="282" fill="#3ddc84" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="end">Noyau accumbens</text>
-    <text x="48" y="294" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="end" opacity="0.6">(profond)</text>
+    <polyline points="160,226 138,285 54,285" fill="none" stroke="#3ddc84" stroke-width="1" opacity="0.8"/>
+    <circle cx="160" cy="226" r="2" fill="#3ddc84"/>
+    <text x="52" y="282" fill="#3ddc84" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="end">Noyau accumbens</text>
+    <text x="52" y="294" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="end" opacity="0.6">(profond)</text>
 
     <!-- Orientation -->
     <text x="30" y="305" fill="#263826" font-size="9" font-family="Share Tech Mono,monospace">FRONTAL</text>
@@ -577,31 +620,31 @@ const FILES={
     <path d="M 108,250 C 155,241 212,239 262,243" fill="none" stroke="#1e2e1e" stroke-width="1" opacity="0.5"/>
 
     <!-- ZONE 1 : Cortex préfrontal ventromédian (cortical, solid) -->
-    <ellipse cx="88" cy="216" rx="37" ry="22" fill="#e8a02025" stroke="#e8a020" stroke-width="1.8"/>
-    <text x="88" y="220" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.9">vmPFC</text>
+    <ellipse cx="75" cy="216" rx="36" ry="21" fill="#e8a02025" stroke="#e8a020" stroke-width="1.8"/>
+    <text x="75" y="220" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.9">vmPFC</text>
     <!-- line to label -->
-    <polyline points="65,200 38,172 14,172" fill="none" stroke="#e8a020" stroke-width="1" opacity="0.8"/>
-    <circle cx="65" cy="200" r="2" fill="#e8a020"/>
-    <text x="13" y="162" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">Cx. préfrontal</text>
-    <text x="13" y="175" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">ventromédian</text>
+    <polyline points="55,200 34,170 12,170" fill="none" stroke="#e8a020" stroke-width="1" opacity="0.8"/>
+    <circle cx="55" cy="200" r="2" fill="#e8a020"/>
+    <text x="11" y="158" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">Cx. préfrontal</text>
+    <text x="11" y="171" fill="#e8a020" font-size="10" font-family="Share Tech Mono,monospace">ventromédian</text>
 
     <!-- ZONE 2 : Amygdale (deep, dashed) -->
-    <ellipse cx="218" cy="246" rx="29" ry="17" fill="#e0505022" stroke="#e05050" stroke-width="1.8" stroke-dasharray="4,2"/>
-    <text x="218" y="250" fill="#e05050" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">AMY</text>
+    <ellipse cx="220" cy="248" rx="29" ry="17" fill="#e0505022" stroke="#e05050" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="220" y="252" fill="#e05050" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">AMY</text>
     <!-- line to label -->
-    <polyline points="238,258 270,285 345,285" fill="none" stroke="#e05050" stroke-width="1" opacity="0.8"/>
-    <circle cx="238" cy="258" r="2" fill="#e05050"/>
-    <text x="348" y="282" fill="#e05050" font-size="10" font-family="Share Tech Mono,monospace">Amygdale</text>
-    <text x="348" y="294" fill="#e05050" font-size="9" font-family="Share Tech Mono,monospace" opacity="0.6">(profonde)</text>
+    <polyline points="240,260 272,287 346,287" fill="none" stroke="#e05050" stroke-width="1" opacity="0.8"/>
+    <circle cx="240" cy="260" r="2" fill="#e05050"/>
+    <text x="349" y="284" fill="#e05050" font-size="10" font-family="Share Tech Mono,monospace">Amygdale</text>
+    <text x="349" y="296" fill="#e05050" font-size="9" font-family="Share Tech Mono,monospace" opacity="0.6">(profonde)</text>
 
-    <!-- ZONE 3 : Noyau accumbens (deep, dashed) -->
-    <ellipse cx="150" cy="214" rx="24" ry="14" fill="#3ddc8422" stroke="#3ddc84" stroke-width="1.8" stroke-dasharray="4,2"/>
-    <text x="150" y="218" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">NAc</text>
+    <!-- ZONE 3 : Noyau accumbens (deep, dashed) — écarté de vmPFC -->
+    <ellipse cx="172" cy="213" rx="24" ry="14" fill="#3ddc8422" stroke="#3ddc84" stroke-width="1.8" stroke-dasharray="4,2"/>
+    <text x="172" y="217" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle" opacity="0.8">NAc</text>
     <!-- line to label -->
-    <polyline points="138,227 118,285 50,285" fill="none" stroke="#3ddc84" stroke-width="1" opacity="0.8"/>
-    <circle cx="138" cy="227" r="2" fill="#3ddc84"/>
-    <text x="48" y="282" fill="#3ddc84" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="end">Noyau accumbens</text>
-    <text x="48" y="294" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="end" opacity="0.6">(profond)</text>
+    <polyline points="160,226 138,285 54,285" fill="none" stroke="#3ddc84" stroke-width="1" opacity="0.8"/>
+    <circle cx="160" cy="226" r="2" fill="#3ddc84"/>
+    <text x="52" y="282" fill="#3ddc84" font-size="10" font-family="Share Tech Mono,monospace" text-anchor="end">Noyau accumbens</text>
+    <text x="52" y="294" fill="#3ddc84" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="end" opacity="0.6">(profond)</text>
 
     <!-- Orientation -->
     <text x="30" y="305" fill="#263826" font-size="9" font-family="Share Tech Mono,monospace">FRONTAL</text>
@@ -696,6 +739,438 @@ const FILES={
     <li>Dosages ajustables par zone selon données Protection Civile</li>
     <li>Secteur témoin non exposé pour comparaison des indicateurs</li>
   </ul>
+</div>
+</div>`},
+
+
+
+// ════════ FACTUM ════════
+'FACTUM/fiche-projet.md':{'title':'fiche-projet.md','path':'VERNET-DB / FACTUM','render':()=>`<div class="doc-content">
+<div class="stamp">CLASSIFIÉ</div>
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01</span></div>
+  <div class="doc-header-row"><span class="doc-label">Intitulé</span><span class="doc-val">Projet FACTUM — Reconditionnement neurologique individuel</span></div>
+  <div class="doc-header-row"><span class="doc-label">Responsable</span><span class="doc-val">Dr. E. Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Unité</span><span class="doc-val">UNISCA — Section Recherche / District 08</span></div>
+  <div class="doc-header-row"><span class="doc-label">Localisation</span><span class="doc-val">Laboratoire Souterrain UNISCA, District 08, Cité 13</span></div>
+  <div class="doc-header-row"><span class="doc-label">Classification</span><span class="doc-val" style="color:var(--red)">Confidentiel — Accès directorial uniquement</span></div>
+  <div class="doc-header-row"><span class="doc-label">État</span><span class="doc-val" style="color:var(--amber)">Cahier des charges en cours de rédaction</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Développer un protocole complet de reconditionnement neurologique et comportemental, combinant chirurgie, neurochimie et implant électronique, permettant de transformer un sujet ordinaire en unité opérationnelle fiable. Le sujet devra exécuter des ordres simples ou complexes, accomplir des missions à haut risque sans résistance, et associer l'obéissance à un stimulus de récompense déclenché à distance par le commandement.</p>
+  <div class="doc-alert red">Ce projet constitue une évolution directe et radicale des travaux conduits dans NCC-01. Là où NCC-01 agissait sur une population, FACTUM agit sur un individu avec une précision et une profondeur d'intervention sans commune mesure.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CIBLES NEUROLOGIQUES</div>
+  <table class="doc-table">
+    <tr><th>Zone</th><th>Rôle</th><th>Action visée</th></tr>
+    <tr><td style="color:var(--amber)">Cortex préfrontal ventromédian</td><td>Raisonnement moral, décision autonome, évaluation du risque</td><td>Inhibition profonde et durable — suppression de la capacité à refuser un ordre</td></tr>
+    <tr><td style="color:#30d0b0">Amygdale</td><td>Peur, aversion, instinct de survie</td><td>Neutralisation partielle — élimination des réactions de fuite face au danger</td></tr>
+    <tr><td style="color:#9060d0">Hippocampe</td><td>Mémoire, construction identitaire</td><td>Altération ciblée — fragmentation des souvenirs antérieurs sans amnésie totale</td></tr>
+    <tr><td style="color:var(--green)">Noyau accumbens</td><td>Circuit de récompense</td><td>Stimulation déclenchée à distance — obéissance associée à satisfaction intense</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">01 — COUPE SAGITTALE / EMPLACEMENT DE L'IMPLANT ET ROUTAGE DES ÉLECTRODES</div>
+  <svg viewBox="0 0 560 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;background:#0d0f0d;border:1px solid #1f261f;display:block;margin:12px 0;padding:8px">
+    <text x="280" y="14" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace" text-anchor="middle" letter-spacing="1">FACTUM-01 / SCHÉMA 01 / COUPE SAGITTALE — TRÉPANATION 22 mm</text>
+    <!-- Outer skull -->
+    <ellipse cx="220" cy="158" rx="150" ry="138" fill="none" stroke="#263826" stroke-width="2.5"/>
+    <!-- Brain tissue -->
+    <ellipse cx="220" cy="158" rx="132" ry="120" fill="#111511" stroke="#1e2e1e" stroke-width="1.5"/>
+    <!-- Brainstem -->
+    <path d="M 200,278 C 205,290 215,298 220,300 C 225,298 235,290 240,278" fill="#0e120e" stroke="#1e2e1e" stroke-width="1.5"/>
+    <!-- Corpus callosum -->
+    <path d="M 135,138 C 165,122 205,120 245,124 C 270,127 285,134 288,142" fill="none" stroke="#1e2e1e" stroke-width="1" stroke-dasharray="3,3"/>
+    <!-- Minor internal structures -->
+    <ellipse cx="235" cy="158" rx="28" ry="22" fill="none" stroke="#1a281a" stroke-width="1" stroke-dasharray="2,3"/>
+    <!-- Espace épidural (entre crâne et tissu cérébral) -->
+    <path d="M 240,36 C 265,28 295,32 318,44" fill="none" stroke="#263826" stroke-width="1" stroke-dasharray="5,3"/>
+    <!-- NI-7 implanté dans l'espace épidural pariétal droit -->
+    <rect x="286" y="56" width="40" height="20" fill="#0a120a" stroke="#e8a020" stroke-width="1.8" rx="2"/>
+    <text x="306" y="70" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">NI-7</text>
+    <!-- Annotation épidural -->
+    <line x1="326" y1="62" x2="370" y2="48" stroke="#3a4f3a" stroke-width="0.8"/>
+    <text x="373" y="46" fill="#3a4f3a" font-size="7.5" font-family="Share Tech Mono,monospace">Épidural pariétal</text>
+    <!-- Trépanation (22 mm) -->
+    <path d="M 287,56 C 295,46 317,46 326,56" fill="none" stroke="#e8a020" stroke-width="1" stroke-dasharray="2,2" opacity="0.7"/>
+    <!-- Zone Cortex préfrontal -->
+    <ellipse cx="112" cy="102" rx="44" ry="28" fill="#e8a02018" stroke="#e8a020" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="112" y="99" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">Cortex</text>
+    <text x="112" y="109" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">préfrontal</text>
+    <!-- Zone Amygdale -->
+    <ellipse cx="152" cy="180" rx="33" ry="21" fill="#30d0b018" stroke="#30d0b0" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="152" y="184" fill="#30d0b0" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">Amygdale</text>
+    <!-- Zone Hippocampe — déplacé plus bas -->
+    <ellipse cx="165" cy="255" rx="40" ry="18" fill="#9060d018" stroke="#9060d0" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="165" y="259" fill="#9060d0" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">Hippocampe</text>
+    <!-- Zone Noyau accumbens — déplacé à droite -->
+    <ellipse cx="255" cy="200" rx="30" ry="17" fill="#3ddc8418" stroke="#3ddc84" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="255" y="204" fill="#3ddc84" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle">N. accumbens</text>
+    <!-- Electrode lines from implant -->
+    <line x1="296" y1="76" x2="148" y2="97" stroke="#e8a020" stroke-width="1.2" stroke-dasharray="5,3"/>
+    <line x1="300" y1="76" x2="178" y2="172" stroke="#30d0b0" stroke-width="1.2" stroke-dasharray="5,3"/>
+    <line x1="304" y1="76" x2="198" y2="248" stroke="#9060d0" stroke-width="1.2" stroke-dasharray="5,3"/>
+    <line x1="308" y1="76" x2="255" y2="186" stroke="#3ddc84" stroke-width="1.2" stroke-dasharray="5,3"/>
+    <!-- Legend -->
+    <rect x="400" y="38" width="148" height="152" fill="#0d0f0d" stroke="#1f261f" stroke-width="1"/>
+    <text x="408" y="53" fill="#3a4f3a" font-size="9" font-family="Share Tech Mono,monospace" letter-spacing="1">LÉGENDE</text>
+    <rect x="408" y="62" width="18" height="10" fill="#0a120a" stroke="#e8a020" stroke-width="1.5" rx="1"/>
+    <text x="430" y="71" fill="#e8a020" font-size="8.5" font-family="Share Tech Mono,monospace">Implant NI-7</text>
+    <line x1="408" y1="85" x2="426" y2="85" stroke="#e8a020" stroke-width="1.3" stroke-dasharray="4,2"/>
+    <text x="430" y="88" fill="#e8a020" font-size="8.5" font-family="Share Tech Mono,monospace">Él.1 / Cx. préfrontal</text>
+    <line x1="408" y1="100" x2="426" y2="100" stroke="#30d0b0" stroke-width="1.3" stroke-dasharray="4,2"/>
+    <text x="430" y="103" fill="#30d0b0" font-size="8.5" font-family="Share Tech Mono,monospace">Él.2 / Amygdale</text>
+    <line x1="408" y1="115" x2="426" y2="115" stroke="#9060d0" stroke-width="1.3" stroke-dasharray="4,2"/>
+    <text x="430" y="118" fill="#9060d0" font-size="8.5" font-family="Share Tech Mono,monospace">Él.3 / Hippocampe</text>
+    <line x1="408" y1="130" x2="426" y2="130" stroke="#3ddc84" stroke-width="1.3" stroke-dasharray="4,2"/>
+    <text x="430" y="133" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace">Él.4 / N. accumbens</text>
+    <line x1="408" y1="148" x2="426" y2="148" stroke="#263826" stroke-width="2.5"/>
+    <text x="430" y="151" fill="#3a4f3a" font-size="8.5" font-family="Share Tech Mono,monospace">Boîte crânienne</text>
+    <line x1="408" y1="163" x2="426" y2="163" stroke="#1e2e1e" stroke-width="1.5"/>
+    <text x="430" y="166" fill="#3a4f3a" font-size="8.5" font-family="Share Tech Mono,monospace">Tissu cérébral</text>
+    <line x1="408" y1="178" x2="426" y2="178" stroke="#263826" stroke-width="1" stroke-dasharray="5,3"/>
+    <text x="430" y="181" fill="#3a4f3a" font-size="8.5" font-family="Share Tech Mono,monospace">Espace épidural</text>
+  </svg>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CONTENU DU DOSSIER</div>
+  <ul class="doc-list">
+    <li class="ok">cahier-des-charges.md — contexte et spécifications</li>
+    <li class="ok">composants/fiche-synthese.md — NX-01 à NX-05</li>
+    <li class="ok">NI-7/implant.md — description et vue éclatée</li>
+    <li class="ok">NI-7/protocole-operatoire.md — procédure chirurgicale</li>
+    <li class="ok">NI-7/equipement.md — équipements requis</li>
+    <li class="ok">protocole-recherche.md — étapes 1 à 6</li>
+  </ul>
+</div>
+<div class="quote-block">« Le résultat attendu n'est pas un citoyen stabilisé, mais une unité opérationnelle fiable, reproductible, et entièrement dédiée à l'exécution. »<br/>— Dr. E. Vernet</div>
+</div>`},
+
+
+
+'FACTUM/cahier-des-charges.md':{'title':'cahier-des-charges.md','path':'VERNET-DB / FACTUM','render':()=>`<div class="doc-content">
+<div class="stamp">CLASSIFIÉ</div>
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01 — Cahier des Charges</span></div>
+  <div class="doc-header-row"><span class="doc-label">Auteur</span><span class="doc-val">Dr. Édouard Vernet</span></div>
+  <div class="doc-header-row"><span class="doc-label">Classification</span><span class="doc-val" style="color:var(--red)">Confidentiel — Accès directorial uniquement</span></div>
+  <div class="doc-header-row"><span class="doc-label">Localisation</span><span class="doc-val">Laboratoire Souterrain UNISCA, District 08, Cité 13</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CONTEXTE</div>
+  <p class="doc-p">Les dispositifs coercitifs actuellement déployés dans les secteurs civils reposent sur des moyens mécaniques : surveillance, présence de la Protection Civile, couvre-feux. Ces méthodes sont réactives — elles interviennent après que le problème s'est manifesté. Ce projet propose une approche radicalement différente : agir directement sur le substrat neurologique d'un individu pour produire une unité opérationnelle entièrement soumise à un commandement externe, capable d'exécuter n'importe quelle mission sans questionnement, sans hésitation, sans instinct de survie.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">OBJECTIF</div>
+  <p class="doc-p">Développer un protocole complet de reconditionnement neurologique et comportemental, combinant chirurgie, neurochimie et implant électronique, permettant de transformer un sujet ordinaire en unité opérationnelle fiable. Le sujet devra exécuter des ordres simples ou complexes, accomplir des missions à haut risque sans résistance, et associer l'obéissance à un stimulus de récompense déclenché à distance par le commandement.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CIBLES NEUROLOGIQUES</div>
+  <div class="doc-alert" style="border-color:var(--amber);color:var(--amber)">Cortex préfrontal ventromédian</div>
+  <p class="doc-p">Siège du raisonnement moral, de la prise de décision autonome et de l'évaluation du risque. Une inhibition profonde et durable de cette zone supprime la capacité du sujet à remettre en question un ordre reçu ou à mesurer le danger de son exécution. Le sujet conserve ses capacités motrices et cognitives de base — il perd simplement la faculté de refuser.</p>
+  <div class="doc-alert" style="border-color:#30d0b0;color:#30d0b0;background:rgba(48,208,176,.05)">Amygdale</div>
+  <p class="doc-p">Responsable des réponses émotionnelles : peur, aversion, instinct de survie. Sa neutralisation partielle permet d'éliminer les réactions de fuite ou de refus face à une situation menaçante. Le sujet peut se trouver en danger de mort sans que son cerveau génère l'impulsion de s'y soustraire.</p>
+  <div class="doc-alert" style="border-color:#9060d0;color:#9060d0;background:rgba(144,96,208,.05)">Hippocampe</div>
+  <p class="doc-p">Impliqué dans la construction de la mémoire et de l'identité. Une altération ciblée fragmente les souvenirs antérieurs du sujet, réduisant toute résistance liée à son identité passée : ses attachements, ses valeurs, ses repères. On n'efface pas l'individu, on le désancre.</p>
+  <div class="doc-alert green">Noyau accumbens</div>
+  <p class="doc-p">Centre du circuit de récompense. Sa stimulation, déclenchée par un signal externe émis par le commandement, crée une association inconsciente entre l'obéissance et une sensation de satisfaction intense. Le sujet cherche à reproduire ce comportement. L'ordre devient un besoin.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">COMPOSANTS NEUROCHIMIQUES</div>
+  <div class="doc-alert green">NX-01 — Inhibiteur préfrontal</div>
+  <p class="doc-p">Dérivé synthétique agissant sur les récepteurs GABA-A du cortex préfrontal ventromédian. Administré par voie intraveineuse en phase préopératoire, puis maintenu à faible dose par microdiffusion via l'implant. Délai d'action : 48 à 72 heures. Effet plein atteint après trois semaines d'exposition continue. Composé : Vorthaline-C (extrait xenien, glande sécrétrice classe 3) + Clonazépam. Ratio 1/4. Conservation 6 mois sous vide.</p>
+  <div class="doc-alert green">NX-02 — Sédatif amygdalien</div>
+  <p class="doc-p">Antagoniste des récepteurs noradrénergiques alpha-2, combiné à un bloquant partiel de la sérotonine. Supprime progressivement les réponses émotionnelles générées par l'amygdale sans altérer les fonctions motrices ou la vigilance générale. L'implant prend le relais par stimulation électrique après l'intervention. Composé : extrait muqueux xenien aquatique non classifié + Propranolol. Solution huileuse irisée. Conservation 3 mois au froid.</p>
+  <div class="doc-alert green">NX-03 — Agent mnésique fragmentant</div>
+  <p class="doc-p">Inhibiteur de la consolidation mémorielle agissant sur les récepteurs NMDA de l'hippocampe. Perturbe l'encodage des souvenirs à long terme sans provoquer d'amnésie totale. Administré en injections intermittentes. Instable au-delà de 72h. Composé : Mnérasine-4 — modification structurelle de la Kétamine (radical fluoré). Production en petits lots, conservation impérative sous 4°C.</p>
+  <div class="doc-alert green">NX-04 — Potentialisateur de récompense</div>
+  <p class="doc-p">Agoniste dopaminergique à haute affinité pour le noyau accumbens. Sans le signal déclencheur, le composé reste inactif — ce qui évite toute accoutumance indépendante du commandement. Composé : alcaloïde extrait de l'excroissance fongique xenienne Xen-F11. Comprimé oral gastrorésistant, dosé à 0.8 mg. Conservation 12 mois.</p>
+  <div class="doc-alert green">NX-05 — Stabilisateur de cohérence cognitive</div>
+  <p class="doc-p">Composé neuroprotecteur destiné à préserver les fonctions cognitives supérieures tout au long du protocole. Sans ce composé, le risque de dégradation cognitive globale compromettrait l'utilité du sujet. Composé : Mémantine + Acide alpha-lipoïque + peptide court de lymphe de Vortigaunt. Comprimé oral quotidien. Conservation 18 mois.</p>
+  <table class="doc-table">
+    <tr><th>Composé</th><th>Base</th><th>Apport xenien</th><th>Forme</th><th>Conservation</th></tr>
+    <tr><td style="color:var(--amber)">NX-01</td><td>Clonazépam</td><td>Vorthaline-C</td><td>Injectable</td><td>6 mois sous vide</td></tr>
+    <tr><td style="color:#30d0b0">NX-02</td><td>Propranolol</td><td>Extrait muqueux aquatique</td><td>Solution huileuse</td><td>3 mois au froid</td></tr>
+    <tr><td style="color:#9060d0">NX-03</td><td>Kétamine modifiée</td><td>Néant</td><td>Injectable</td><td>72h max</td></tr>
+    <tr><td style="color:var(--green)">NX-04</td><td>Apomorphine</td><td>Alcaloïde Xen-F11</td><td>Comprimé oral</td><td>12 mois</td></tr>
+    <tr><td>NX-05</td><td>Mémantine / Ac. alpha-lipoïque</td><td>Peptide Vortigaunt</td><td>Comprimé oral</td><td>18 mois</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">L'IMPLANT NI-7</div>
+  <p class="doc-p">Unité électronique miniaturisée posée chirurgicalement dans l'espace épidural de la région pariétale droite, entre la boîte crânienne et la dure-mère. Dimensions : 18×12×3 mm. Titane chirurgical, enrobage résine époxy biocompatible. Alimentation par pile bio-galvanique rechargée par chaleur corporelle. Émetteur 2.4 GHz crypté, portée 300 m. Quatre électrodes platinum-iridium, chacune ciblant une zone distincte.</p>
+  <table class="doc-table">
+    <tr><th>Zone</th><th>Fréquence</th><th>Amplitude</th><th>Effet</th></tr>
+    <tr><td style="color:var(--amber)">Cortex préfrontal</td><td>0.5 à 2 Hz (continu)</td><td>1.5 à 3 mA</td><td>Inhibition décisionnelle et morale</td></tr>
+    <tr><td style="color:#30d0b0">Amygdale</td><td>10 à 50 Hz (continu)</td><td>0.8 à 2 mA</td><td>Anesthésie émotionnelle</td></tr>
+    <tr><td style="color:#9060d0">Hippocampe</td><td>1 Hz (intermittent)</td><td>1 à 2.5 mA</td><td>Fragmentation mnésique progressive</td></tr>
+    <tr><td style="color:var(--green)">Noyau accumbens</td><td>130 Hz (sur signal externe)</td><td>3 à 5 mA</td><td>Récompense déclenchée sur ordre</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PROTOCOLE DE RECHERCHE</div>
+  <table class="doc-table">
+    <tr><th>Étape</th><th>Objet</th><th>Durée estimée</th></tr>
+    <tr><td>1</td><td>Évaluation neurologique du sujet</td><td>1 semaine</td></tr>
+    <tr><td>2</td><td>Conditionnement neurochimique préopératoire (NX-01, NX-02, NX-05)</td><td>3 semaines</td></tr>
+    <tr><td>3</td><td>Intervention chirurgicale — pose de l'implant NI-7</td><td>6 à 8 heures</td></tr>
+    <tr><td>4</td><td>Activation, calibration, introduction de NX-03</td><td>Variable</td></tr>
+    <tr><td>5</td><td>Conditionnement comportemental avec NX-04</td><td>4 à 6 semaines</td></tr>
+    <tr><td>6</td><td>Validation opérationnelle en conditions réelles</td><td>Variable</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PROTOCOLE OPÉRATOIRE — POSE DE L'IMPLANT NI-7</div>
+  <p class="doc-p">Durée estimée : 6 à 8 heures. Équipe requise : 1 chirurgien, 1 assistant, 1 technicien implant. Sujet en décubitus dorsal, tête fixée dans un cadre stéréotaxique. Trépanation pariétale droite de 22 mm. Pose du corps NI-7 dans l'espace épidural, fixation par deux vis de titane. Implantation des électrodes sous guidage imagerie peropératoire. Ordre de pose : noyau accumbens, hippocampe, amygdale, cortex préfrontal. Activation et calibration en salle d'opération avant fermeture.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NOTE DU RESPONSABLE</div>
+  <div class="quote-block">« Ce projet représente une évolution naturelle de mes travaux antérieurs. Là où NCC-01 agissait sur une population, le projet FACTUM agit sur un individu avec une précision et une profondeur d'intervention sans commune mesure. Le résultat attendu n'est pas un citoyen stabilisé, mais une unité opérationnelle fiable, reproductible, et entièrement dédiée à l'exécution. Je suis convaincu que ce protocole, une fois validé, pourra être standardisé et appliqué à une échelle bien plus large. »<br/>— Dr. E. Vernet</div>
+</div>
+</div>`},
+'FACTUM/composants/fiche-synthese.md':{'title':'fiche-synthese.md','path':'VERNET-DB / FACTUM / composants','render':()=>`<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01 / COMPOSANTS</span></div>
+  <div class="doc-header-row"><span class="doc-label">Objet</span><span class="doc-val">Fiche de synthèse — Composés neurochimiques NX-01 à NX-05</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NX-01 — INHIBITEUR PRÉFRONTAL</div>
+  <p class="doc-p">Dérivé synthétique agissant sur les récepteurs GABA-A du cortex préfrontal ventromédian. Réduit l'activité synaptique des neurones responsables de la prise de décision morale et de l'évaluation du risque. Administré par voie intraveineuse en phase préopératoire, puis maintenu à faible dose par microdiffusion via l'implant.</p>
+  <div class="doc-alert green">Vorthaline-C (extrait xenien, glande sécrétrice classe 3) + Clonazépam. Ratio : 1/4. Solution injectable, conservation 6 mois sous vide.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NX-02 — SÉDATIF AMYGDALIEN</div>
+  <p class="doc-p">Antagoniste des récepteurs noradrénergiques alpha-2, combiné à un bloquant partiel de la sérotonine. Supprime progressivement les réponses émotionnelles générées par l'amygdale : peur, aversion, instinct de survie, sans altérer les fonctions motrices ou la vigilance générale du sujet.</p>
+  <div class="doc-alert green">Extrait muqueux xenien aquatique non classifié + Propranolol. Solution huileuse translucide légèrement irisée. Conservation 3 mois au froid.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NX-03 — AGENT MNÉSIQUE FRAGMENTANT</div>
+  <p class="doc-p">Inhibiteur de la consolidation mémorielle agissant sur les récepteurs NMDA de l'hippocampe. Perturbe l'encodage des souvenirs à long terme et déstabilise les souvenirs identitaires déjà consolidés, sans provoquer d'amnésie totale. Instable au-delà de 72h.</p>
+  <div class="doc-alert green">Mnérasine-4 — modification structurelle de la Kétamine (radical fluoré). Production en petits lots. Conservation impérative sous 4°C.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NX-04 — POTENTIALISATEUR DE RÉCOMPENSE</div>
+  <p class="doc-p">Agoniste dopaminergique à haute affinité pour le noyau accumbens. Amplifie la réponse du circuit de récompense au signal externe émis par l'implant. Sans le signal déclencheur, le composé reste inactif — ce qui évite toute accoutumance indépendante du commandement.</p>
+  <div class="doc-alert green">Alcaloïde extrait de l'excroissance fongique xenienne Xen-F11. Comprimé oral gastrorésistant, dosé à 0.8 mg. Conservation 12 mois.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">NX-05 — STABILISATEUR DE COHÉRENCE COGNITIVE</div>
+  <p class="doc-p">Composé neuroprotecteur destiné à préserver les fonctions cognitives supérieures tout au long du protocole. L'action combinée des quatre agents précédents expose le cerveau à un stress neurologique significatif. Sans ce composé, le risque de dégradation cognitive globale compromettrait l'utilité du sujet.</p>
+  <div class="doc-alert green">Mémantine + Acide alpha-lipoïque + peptide court de lymphe de Vortigaunt (régénération synaptique). Comprimé oral quotidien. Conservation 18 mois.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">TABLEAU RÉCAPITULATIF</div>
+  <table class="doc-table">
+    <tr><th>Composé</th><th>Base</th><th>Apport xenien</th><th>Forme</th><th>Conservation</th></tr>
+    <tr><td style="color:var(--amber)">NX-01</td><td>Clonazépam</td><td>Vorthaline-C</td><td>Injectable</td><td>6 mois sous vide</td></tr>
+    <tr><td style="color:#30d0b0">NX-02</td><td>Propranolol</td><td>Extrait muqueux aquatique</td><td>Solution huileuse</td><td>3 mois au froid</td></tr>
+    <tr><td style="color:#9060d0">NX-03</td><td>Kétamine modifiée</td><td>Néant</td><td>Injectable</td><td>72h max</td></tr>
+    <tr><td style="color:var(--green)">NX-04</td><td>Apomorphine</td><td>Alcaloïde Xen-F11</td><td>Comprimé oral</td><td>12 mois</td></tr>
+    <tr><td style="color:var(--text)">NX-05</td><td>Mémantine / Ac. alpha-lipoïque</td><td>Peptide Vortigaunt</td><td>Comprimé oral</td><td>18 mois</td></tr>
+  </table>
+</div>
+</div>`},
+'FACTUM/NI-7/implant.md':{'title':'implant.md','path':'VERNET-DB / FACTUM / NI-7','render':()=>`<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01 / NI-7</span></div>
+  <div class="doc-header-row"><span class="doc-label">Objet</span><span class="doc-val">Implant neurologique NI-7 — Description technique</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">DESCRIPTION GÉNÉRALE</div>
+  <p class="doc-p">L'implant NI-7 est le cœur du dispositif FACTUM. Il s'agit d'une unité électronique miniaturisée posée chirurgicalement dans l'espace épidural de la région pariétale droite, entre la boîte crânienne et la dure-mère. Cet emplacement offre trois avantages : accessible par une trépanation de taille réduite, il ne comprime pas directement le tissu cérébral, et constitue un point de départ idéal pour le routage des quatre électrodes vers les zones cibles situées en profondeur.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CARACTÉRISTIQUES PHYSIQUES</div>
+  <table class="doc-table">
+    <tr><th>Paramètre</th><th>Valeur</th></tr>
+    <tr><td>Dimensions</td><td>18 × 12 × 3 mm</td></tr>
+    <tr><td>Matériau</td><td>Titane chirurgical, enrobage résine époxy biocompatible</td></tr>
+    <tr><td>Alimentation</td><td>Pile bio-galvanique rechargée par chaleur corporelle — autonomie indéfinie</td></tr>
+    <tr><td>Communication</td><td>Émetteur 2.4 GHz à signal crypté — portée 300 m en environnement fermé</td></tr>
+    <tr><td>Électrodes</td><td>4 fils platinum-iridium précalibrés — ancrage par microclips résorbables</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">02 — IMPLANT NI-7 — VUE ÉCLATÉE</div>
+  <svg viewBox="0 0 520 205" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px;background:#0d0f0d;border:1px solid #1f261f;display:block;margin:12px 0;padding:8px">
+    <text x="260" y="14" fill="#3a4f3a" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">Titane chirurgical / 18×12×3 mm / Épidural pariétal droit</text>
+    <!-- Dimension width -->
+    <line x1="88" y1="40" x2="392" y2="40" stroke="#3a4f3a" stroke-width="0.8"/>
+    <line x1="88" y1="37" x2="88" y2="43" stroke="#3a4f3a" stroke-width="0.8"/>
+    <line x1="392" y1="37" x2="392" y2="43" stroke="#3a4f3a" stroke-width="0.8"/>
+    <text x="240" y="38" fill="#3a4f3a" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">18 mm</text>
+    <!-- Dimension height -->
+    <line x1="76" y1="48" x2="76" y2="130" stroke="#3a4f3a" stroke-width="0.8"/>
+    <line x1="73" y1="48" x2="79" y2="48" stroke="#3a4f3a" stroke-width="0.8"/>
+    <line x1="73" y1="130" x2="79" y2="130" stroke="#3a4f3a" stroke-width="0.8"/>
+    <text x="68" y="93" fill="#3a4f3a" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">12</text>
+    <text x="68" y="102" fill="#3a4f3a" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">mm</text>
+    <!-- Implant outer case -->
+    <rect x="88" y="48" width="304" height="82" fill="#0d0f0d" stroke="#e8a020" stroke-width="1.8" rx="3"/>
+    <!-- Internal dividers -->
+    <line x1="184" y1="55" x2="184" y2="123" stroke="#1f261f" stroke-width="1"/>
+    <line x1="300" y1="55" x2="300" y2="123" stroke="#1f261f" stroke-width="1"/>
+    <!-- Section 1: Pile -->
+    <rect x="96" y="56" width="80" height="66" fill="#111511" stroke="#263826" stroke-width="1" rx="2"/>
+    <text x="136" y="82" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">Pile</text>
+    <text x="136" y="93" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">bio-galv.</text>
+    <!-- Section 2: Processeur -->
+    <rect x="192" y="56" width="100" height="66" fill="#111511" stroke="#263826" stroke-width="1" rx="2"/>
+    <text x="242" y="79" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">Processeur central</text>
+    <text x="242" y="90" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">Gestion des</text>
+    <text x="242" y="101" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">impulsions</text>
+    <!-- Section 3: Emetteur -->
+    <rect x="308" y="56" width="76" height="66" fill="#111511" stroke="#263826" stroke-width="1" rx="2"/>
+    <text x="346" y="82" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">Émetteur</text>
+    <text x="346" y="93" fill="#3ddc84" font-size="8.5" font-family="Share Tech Mono,monospace" text-anchor="middle">2.4 GHz</text>
+    <!-- Electrode outputs label -->
+    <text x="240" y="148" fill="#3a4f3a" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle" letter-spacing="0.5">Sorties électrodes platinum-iridium (×4)</text>
+    <!-- Electrode 1: Cortex préfrontal -->
+    <line x1="136" y1="130" x2="136" y2="158" stroke="#e8a020" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <circle cx="136" cy="161" r="5" fill="#e8a020" opacity="0.9"/>
+    <text x="136" y="176" fill="#e8a020" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">Cortex</text>
+    <text x="136" y="186" fill="#e8a020" font-size="7.5" font-family="Share Tech Mono,monospace" text-anchor="middle">préfrontal</text>
+    <!-- Electrode 2: Amygdale -->
+    <line x1="210" y1="130" x2="210" y2="158" stroke="#30d0b0" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <circle cx="210" cy="161" r="5" fill="#30d0b0" opacity="0.9"/>
+    <text x="210" y="178" fill="#30d0b0" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">Amygdale</text>
+    <!-- Electrode 3: Hippocampe — espacé -->
+    <line x1="282" y1="130" x2="282" y2="158" stroke="#9060d0" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <circle cx="282" cy="161" r="5" fill="#9060d0" opacity="0.9"/>
+    <text x="282" y="178" fill="#9060d0" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">Hippocampe</text>
+    <!-- Electrode 4: Accumbens — espacé -->
+    <line x1="356" y1="130" x2="356" y2="158" stroke="#3ddc84" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <circle cx="356" cy="161" r="5" fill="#3ddc84" opacity="0.9"/>
+    <text x="356" y="176" fill="#3ddc84" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">N.</text>
+    <text x="356" y="186" fill="#3ddc84" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">accumbens</text>
+    <!-- FACTUM ref -->
+    <text x="240" y="198" fill="#2a3a2a" font-size="8" font-family="Share Tech Mono,monospace" text-anchor="middle">FACTUM-01 / SCHÉMA 02 / NI-7 VUE ÉCLATÉE</text>
+  </svg>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">03 — PARAMÈTRES DES IMPULSIONS ÉLECTRIQUES</div>
+  <table class="doc-table">
+    <tr><th>Zone</th><th>Fréquence</th><th>Amplitude</th><th>Effet</th></tr>
+    <tr><td style="color:var(--amber)">Cortex préfrontal</td><td>0.5 à 2 Hz (continu)</td><td>1.5 à 3 mA</td><td>Inhibition décisionnelle et morale</td></tr>
+    <tr><td style="color:#30d0b0">Amygdale</td><td>10 à 50 Hz (continu)</td><td>0.8 à 2 mA</td><td>Anesthésie émotionnelle</td></tr>
+    <tr><td style="color:#9060d0">Hippocampe</td><td>1 Hz (intermittent)</td><td>1 à 2.5 mA</td><td>Fragmentation mnésique progressive</td></tr>
+    <tr><td style="color:var(--green)">Noyau accumbens</td><td>130 Hz (sur signal externe)</td><td>3 à 5 mA</td><td>Récompense déclenchée sur ordre</td></tr>
+  </table>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">SYSTÈME DE COMMANDEMENT</div>
+  <p class="doc-p">Le commandement dispose d'un émetteur portatif permettant de déclencher à distance la stimulation du noyau accumbens en temps réel, à la réception d'un son, d'une vibration ou d'un signal codé. Les fils platinum-iridium cheminent sous la dure-mère selon des trajets distincts, guidés par imagerie peropératoire, jusqu'à leur point d'ancrage respectif.</p>
+</div>
+</div>`},
+'FACTUM/NI-7/protocole-operatoire.md':{'title':'protocole-operatoire.md','path':'VERNET-DB / FACTUM / NI-7','render':()=>`<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01 / OP-01</span></div>
+  <div class="doc-header-row"><span class="doc-label">Durée estimée</span><span class="doc-val">6 à 8 heures</span></div>
+  <div class="doc-header-row"><span class="doc-label">Équipe requise</span><span class="doc-val">1 chirurgien, 1 assistant, 1 technicien implant</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PHASE 1 — PRÉPARATION DU SUJET</div>
+  <p class="doc-p">Le sujet est placé en décubitus dorsal, tête fixée dans un cadre stéréotaxique permettant un positionnement millimétrique de la zone d'intervention. Rasage et désinfection complète du scalp. Administration d'une anesthésie générale par voie intraveineuse. Le sujet doit être inconscient mais avec une activité cérébrale minimale maintenue pour permettre le contrôle en temps réel des réponses neurologiques lors du placement des électrodes. Pose des capteurs d'électroencéphalographie de surface pour surveillance continue.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PHASE 2 — TRÉPANATION PARIÉTALE DROITE</div>
+  <p class="doc-p">Incision du scalp selon un tracé en fer à cheval centré sur la région pariétale droite. Réclinaison du lambeau cutané. Réalisation d'une trépanation de 22 mm de diamètre à l'aide de la fraise crânienne, en préservant la dure-mère. Hémostase soigneuse des bords osseux à la cire chirurgicale.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PHASE 3 — POSE DU CORPS DE L'IMPLANT</div>
+  <p class="doc-p">Introduction du corps de l'implant NI-7 dans l'espace épidural, face réceptrice orientée vers la dure-mère. Fixation par deux vis de titane autoforantes sur les bords de la trépanation. Vérification de la stabilité mécanique avant passage aux électrodes. L'implant ne doit exercer aucune pression sur la dure-mère sous-jacente.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PHASE 4 — IMPLANTATION DES ÉLECTRODES</div>
+  <p class="doc-p">Ouverture contrôlée de la dure-mère en quatre points d'entrée distincts, chacun correspondant au trajet de l'une des électrodes. Introduction des fils platinum-iridium sous guidage par imagerie peropératoire en temps réel. Chaque électrode est acheminée selon un trajet préétabli jusqu'à sa zone cible, en évitant les sinus veineux et les zones éloquentes. Ancrage des terminaisons par microclips résorbables.</p>
+  <div class="doc-alert">Ordre de pose recommandé : noyau accumbens, hippocampe, amygdale, cortex préfrontal.</div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PHASE 5 — VÉRIFICATION ET CALIBRATION INITIALE</div>
+  <p class="doc-p">Activation de l'implant en salle d'opération à paramètres minimaux. Contrôle de la continuité électrique des quatre électrodes. Vérification de l'absence d'activité épileptiforme sur l'électroencéphalogramme. Premier relevé des impédances pour chaque électrode. Ajustement de la position si nécessaire avant fermeture.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">PHASE 6 — FERMETURE</div>
+  <p class="doc-p">Remise en place du volet osseux et fixation par agrafes de titane. Suture de la dure-mère aux points d'entrée des électrodes avec fil résorbable. Refermeture du scalp par plan anatomique. Pansement compressif stérile. Surveillance neurologique rapprochée pendant les 48 heures suivant l'intervention.</p>
+</div>
+</div>`},
+'FACTUM/NI-7/equipement.md':{'title':'equipement.md','path':'VERNET-DB / FACTUM / NI-7','render':()=>`<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01 / ÉQUIPEMENT</span></div>
+  <div class="doc-header-row"><span class="doc-label">Objet</span><span class="doc-val">Liste des équipements requis pour la pose de l'implant NI-7</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">BLOC OPÉRATOIRE</div>
+  <ul class="doc-list">
+    <li>Cadre stéréotaxique neurochirurgical pour fixation céphalique</li>
+    <li>Système d'imagerie peropératoire (fluoroscopie ou IRM per-op)</li>
+    <li>Moniteur d'électroencéphalographie de surface (16 canaux minimum)</li>
+    <li>Table d'opération neurochirurgicale à têtière articulée</li>
+    <li>Colonne d'aspiration neurochirurgicale à débit variable</li>
+    <li>Bistouri électrique bipolaire pour hémostase de précision</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">INSTRUMENTATION CHIRURGICALE</div>
+  <ul class="doc-list">
+    <li>Fraise crânienne pneumatique avec guide de profondeur (diamètre 22 mm)</li>
+    <li>Jeu d'écarteurs autostatiques de type Weitlaner</li>
+    <li>Microinstruments de neurochirurgie : spatules, crochet dure-mère, micropince</li>
+    <li>Système de guidage des électrodes par stylet semi-rigide</li>
+    <li>Microclips résorbables pour ancrage des terminaisons électrodes</li>
+    <li>Vis de titane autoforantes (×2) pour fixation de l'implant</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">CONSOMMABLES ET IMPLANTS</div>
+  <ul class="doc-list">
+    <li class="ok">Implant NI-7 stérilisé sous vide (1 unité)</li>
+    <li class="ok">Jeu de quatre électrodes platinum-iridium précalibrées</li>
+    <li>Fil de suture résorbable 4.0 pour dure-mère</li>
+    <li>Cire chirurgicale hémostatique</li>
+    <li>Champs opératoires stériles, set de craniotomie standard</li>
+  </ul>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">MONITORING ET CALIBRATION</div>
+  <ul class="doc-list">
+    <li>Testeur d'impédance électrode compatible NI-7</li>
+    <li>Émetteur de calibration portatif pour activation initiale</li>
+    <li>Logiciel de paramétrage des impulsions (interface technicien)</li>
+  </ul>
+</div>
+</div>`},
+'FACTUM/protocole-recherche.md':{'title':'protocole-recherche.md','path':'VERNET-DB / FACTUM','render':()=>`<div class="doc-content">
+<div class="doc-header">
+  <div class="doc-header-row"><span class="doc-label">Référence</span><span class="doc-val">FACTUM-01 / PROTOCOLE</span></div>
+  <div class="doc-header-row"><span class="doc-label">Objet</span><span class="doc-val">Protocole de recherche — Étapes 1 à 6</span></div>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAPE 1 — ÉVALUATION NEUROLOGIQUE DU SUJET</div>
+  <p class="doc-p">Cartographie complète du profil neurologique avant toute intervention. Identification des zones de résistance potentielle, des particularités anatomiques et des seuils de tolérance aux composés. Durée estimée : une semaine.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAPE 2 — CONDITIONNEMENT NEUROCHIMIQUE PRÉOPÉRATOIRE</div>
+  <p class="doc-p">Administration par voie intraveineuse de NX-01 et NX-02 à haute concentration. Cette phase prépare les tissus à recevoir les électrodes en réduisant leur réactivité et amorce le processus d'inhibition avant l'implantation. Administration parallèle de NX-05 pour protéger les zones non ciblées. Durée estimée : trois semaines.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAPE 3 — INTERVENTION CHIRURGICALE</div>
+  <p class="doc-p">Pose de l'implant NI-7 selon le protocole opératoire détaillé dans NI-7/protocole-operatoire.md. Les électrodes sont positionnées sous imagerie cérébrale en temps réel pour garantir la précision du placement.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAPE 4 — ACTIVATION ET CALIBRATION</div>
+  <p class="doc-p">Activation progressive de l'implant et ajustement des paramètres d'impulsion pour chaque zone en fonction de la réponse individuelle du sujet. Introduction du NX-03 en injections intermittentes. Calibration du signal de récompense et première association stimulus-comportement.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAPE 5 — CONDITIONNEMENT COMPORTEMENTAL</div>
+  <p class="doc-p">Phase de dressage progressif à partir d'ordres simples associés au stimulus de récompense via NX-04. Complexification progressive des missions jusqu'à atteindre le seuil d'obéissance totale, y compris face à des situations représentant un danger physique direct. Durée estimée : quatre à six semaines.</p>
+</div>
+<div class="doc-section">
+  <div class="doc-section-title">ÉTAPE 6 — VALIDATION OPÉRATIONNELLE</div>
+  <p class="doc-p">Série de tests en conditions réelles. Le sujet est soumis à des scénarios impliquant un risque physique direct afin de vérifier l'absence de toute réaction de fuite ou de refus. Le protocole est validé lorsque le sujet exécute l'ensemble des ordres reçus sans délai ni résistance observable.</p>
+  <div class="doc-alert red">Ce stade constitue le point de non-retour pour le sujet. Une fois la validation opérationnelle atteinte, les modifications neurologiques sont considérées comme irréversibles.</div>
 </div>
 </div>`},
 
